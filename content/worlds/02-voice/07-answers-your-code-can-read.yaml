@@ -1,0 +1,124 @@
+id: answers-your-code-can-read
+title: Answers your code can read
+concepts:
+  - structured output
+  - JSON Schema
+  - enum and required
+  - validate what comes back
+
+lesson: |
+  Text is for people. A program wants fields it can read: a number, a date, one
+  of three labels.
+
+  You could ask for JSON in the prompt and hope. Sooner or later the model adds
+  a friendly sentence before the JSON, or invents a label you never planned
+  for, and your parser fails in production.
+
+  The dependable way is **structured output**. You describe the answer you want
+  as a **JSON Schema**, and the provider makes sure the reply matches it. A
+  schema is itself JSON:
+
+  - `type` says what a value is: `object`, `string`, `number`, `boolean`, `array`.
+  - `properties` lists the fields of an object.
+  - `required` names the fields that must be present.
+  - `enum` restricts a value to a fixed list.
+
+  Two cautions. A schema guarantees the *shape* of an answer, not that it is
+  *true*, so still check values that matter. And not every provider or model
+  enforces schemas, so validate what you receive.
+
+  You will meet this schema language again in World 3. It is also how tools are
+  described to a model.
+
+goal: |
+  The script crashes on replies like `"priority": "URGENT!!"`. Finish the schema:
+  `priority` must be a string, it must be one of `low`, `medium` or `high`, and
+  it must always be present.
+
+scene:
+  type: messages
+  request: { model: forge-1, output: "your schema" }
+  messages:
+    - { role: user, content: "Classify this ticket: since the 2.3 update I cannot log in, and my invoice is due tomorrow!" }
+  reply:
+    mono: true
+    content: "{\n  \"summary\": \"Cannot log in since update 2.3.\",\n  \"priority\": \"URGENT!!\"\n}"
+  note: Your script expected low, medium or high. It has no idea what to do with "URGENT!!".
+  cases:
+    - when: { json: '"enum"\s*:\s*\[[^\]]*"high"' }
+      reply:
+        mono: true
+        content: "{\n  \"summary\": \"Cannot log in since update 2.3.\",\n  \"priority\": \"high\"\n}"
+      note: With an enum in the schema, the reply can only use a label you listed.
+
+challenge:
+  type: json
+  starter: |
+    {
+      "type": "object",
+      "properties": {
+        "summary": { "type": "string" },
+        "priority": {}
+      },
+      "required": ["summary"]
+    }
+  rules:
+    - { path: type, op: equals, value: object, message: 'Keep "type": "object" at the top.' }
+    - { path: properties.summary.type, op: equals, value: string, message: 'Keep "summary" as a string.' }
+    - { path: properties.priority.type, op: equals, value: string, message: 'Give "priority" a "type" of "string".' }
+    - { path: properties.priority.enum, op: includes, value: low, message: 'The "enum" of "priority" needs "low".' }
+    - { path: properties.priority.enum, op: includes, value: medium, message: 'The "enum" of "priority" needs "medium".' }
+    - { path: properties.priority.enum, op: includes, value: high, message: 'The "enum" of "priority" needs "high".' }
+    - { path: required, op: includes, value: summary, message: 'Keep "summary" in "required".' }
+    - { path: required, op: includes, value: priority, message: 'Add "priority" to "required", or the model may leave it out.' }
+
+hints:
+  - Copy the pattern of `summary` for the type of `priority`, then add a second key next to it.
+  - 'A fixed list of allowed values is written `"enum": ["low", "medium", "high"]`.'
+  - 'The `priority` line becomes `{ "type": "string", "enum": ["low", "medium", "high"] }`, and `required` becomes `["summary", "priority"]`.'
+
+success: |
+  Your script can now trust the shape of every reply: two fields, and a priority
+  that is always one of three known words.
+
+  The robot has a voice. It can be called from code, told who it is, given a
+  conversation, streamed, costed, prompted well and made to answer in data. It
+  still knows only what it was trained on, and it cannot do anything except
+  write. World 3 gives it memory and hands.
+
+links:
+  - title: Structured output with Gemini
+    url: https://ai.google.dev/gemini-api/docs/structured-output
+    kind: docs
+    note: A provider's guide to passing a schema with a request.
+  - title: Getting started with JSON Schema
+    url: https://json-schema.org/learn/getting-started-step-by-step
+    kind: docs
+    note: The schema language itself, step by step.
+  - title: Zod
+    url: https://zod.dev
+    kind: tool
+    note: Define a schema once in TypeScript and validate replies with it.
+  - title: Pydantic
+    url: https://docs.pydantic.dev
+    kind: tool
+    note: The same idea in Python.
+
+solution: |
+  {
+    "type": "object",
+    "properties": {
+      "summary": { "type": "string" },
+      "priority": { "type": "string", "enum": ["low", "medium", "high"] }
+    },
+    "required": ["summary", "priority"]
+  }
+wrong: |
+  {
+    "type": "object",
+    "properties": {
+      "summary": { "type": "string" },
+      "priority": {}
+    },
+    "required": ["summary"]
+  }

@@ -431,6 +431,239 @@ function ContextScene(props: SceneProps) {
   );
 }
 
+/* --------------------------------------------------------------- messages */
+
+/**
+ * A request to a model and what comes back: the messages sent, then a reply or
+ * an error. Lessons describe alternative outcomes as `cases`; the first case
+ * whose patterns all match the player's current answers replaces the defaults.
+ * Strings may contain {{blank}} to show what the player typed.
+ */
+export interface MessagesView {
+  /** A blank listed in `needs` is still empty, so nothing has been sent yet. */
+  pending: boolean;
+  request: [string, string][];
+  system?: string;
+  messages: { role: string; content: string }[];
+  reply?: { content: string; tokens?: string[]; stopReason: string; cut: boolean; mono: boolean };
+  error?: string;
+  note?: string;
+  say?: string;
+}
+
+const fillIn = (text: unknown, vals: Record<string, string>) =>
+  String(text ?? '').replace(/\{\{([a-z][a-z0-9_]*)\}\}/g, (_, name: string) => vals[name] || '?');
+
+export function resolveMessages(config: Record<string, any>, values: Record<string, string>): MessagesView {
+  const vals: Record<string, string> = {};
+  for (const [k, v] of Object.entries(values)) vals[k] = clean(v);
+
+  const match = (config.cases ?? []).find((c: any) =>
+    Object.entries(c.when ?? {}).every(([name, pattern]) => {
+      const v = vals[name] ?? '';
+      if (v === '') return false;
+      try {
+        return new RegExp(String(pattern), 'i').test(v);
+      } catch {
+        return false;
+      }
+    }),
+  );
+  const cfg = { ...config, ...(match ?? {}) };
+
+  let pending = (config.needs ?? []).some((n: string) => !vals[n]);
+  let error: string | undefined = cfg.error ? fillIn(cfg.error, vals) : undefined;
+  let reply: MessagesView['reply'];
+
+  if (!pending && !error && cfg.reply !== undefined) {
+    const r = typeof cfg.reply === 'string' ? { content: cfg.reply } : cfg.reply;
+    let tokens: string[] | undefined = r.tokens;
+    let cut = false;
+    const limitBlank = config.bind?.maxTokens;
+    if (tokens && limitBlank) {
+      const raw = vals[limitBlank] ?? '';
+      if (!/^-?\d+$/.test(raw)) error = 'max_tokens: expected a whole number.';
+      else if (Number(raw) < 1) error = 'max_tokens: must be at least 1.';
+      else {
+        cut = Number(raw) < tokens.length;
+        tokens = tokens.slice(0, Number(raw));
+      }
+    }
+    if (!error) {
+      reply = {
+        content: tokens ? tokens.join('') : fillIn(r.content, vals),
+        tokens,
+        cut,
+        stopReason: cut ? 'max_tokens' : 'end_turn',
+        mono: !!r.mono,
+      };
+    }
+  }
+  if (error) pending = false;
+
+  return {
+    pending,
+    request: Object.entries(cfg.request ?? {}).map(([k, v]) => [k, fillIn(v, vals)]),
+    system: cfg.system ? fillIn(cfg.system, vals) : undefined,
+    messages: (cfg.messages ?? []).map((m: any) => ({ role: fillIn(m.role, vals), content: fillIn(m.content, vals) })),
+    reply,
+    error,
+    note: cfg.note ? fillIn(cfg.note, vals) : undefined,
+    say: cfg.say ? fillIn(cfg.say, vals) : undefined,
+  };
+}
+
+/** Pure: what one request costs, with prices in dollars per million tokens. */
+export function bill(usage: { input: number; output: number }, inPrice: number, outPrice: number) {
+  const input = (usage.input * inPrice) / 1_000_000;
+  const output = (usage.output * outPrice) / 1_000_000;
+  return { input, output, total: input + output };
+}
+
+/** Pure: seconds until the first words and until the last, with and without streaming. */
+export function streamTiming(tokenCount: number, streaming: boolean, perToken = 0.2) {
+  const total = Math.round(tokenCount * perToken * 10) / 10;
+  return { first: streaming ? perToken : total, total };
+}
+
+const money = (n: number) => (Number.isFinite(n) ? `$${n.toFixed(n < 1 ? 4 : 2)}` : '$?');
+
+function MessagesScene(props: SceneProps) {
+  const { config, values, say } = props;
+  const view = useMemo(() => resolveMessages(config, values), [config, values]);
+  const [replay, setReplay] = useState(0);
+  const [shown, setShown] = useState(0);
+  const [waiting, setWaiting] = useState(false);
+
+  const streamRaw = config.stream ? (bound(props, 'stream') ?? '').toLowerCase() : '';
+  const mode = streamRaw === 'true' ? 'on' : streamRaw === 'false' ? 'off' : null;
+  const tokens = view.reply?.tokens ?? [];
+
+  useEffect(() => {
+    if (!config.stream || !mode || tokens.length === 0) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setWaiting(false);
+      setShown(tokens.length);
+      return;
+    }
+    setShown(0);
+    if (mode === 'on') {
+      setWaiting(false);
+      let i = 0;
+      const t = setInterval(() => {
+        i += 1;
+        setShown(i);
+        if (i >= tokens.length) clearInterval(t);
+      }, 200);
+      return () => clearInterval(t);
+    }
+    setWaiting(true);
+    const t = setTimeout(() => {
+      setWaiting(false);
+      setShown(tokens.length);
+    }, tokens.length * 200);
+    return () => clearTimeout(t);
+  }, [mode, replay, tokens.length]);
+
+  const inPrice = Number(bound(props, 'inPrice') || NaN);
+  const outPrice = Number(bound(props, 'outPrice') || NaN);
+  const cost = config.usage ? bill(config.usage, inPrice, outPrice) : null;
+  const timing = config.stream && mode ? streamTiming(tokens.length, mode === 'on') : null;
+
+  useEffect(() => {
+    if (view.say) say(view.say);
+    else if (view.error) say('The API refused that request. Read the error.');
+    else if (view.pending) say(config.idle ?? 'Fill in the blanks and I will send the request.');
+    else if (timing) say(mode === 'on' ? 'You read my words while I am still writing.' : 'I am writing. You get nothing until I have finished.');
+    else if (view.reply?.cut) say('I ran out of room in the middle of my sentence.');
+    else if (view.reply) say(view.reply.mono ? 'Here is my answer as data.' : view.reply.content.split('\n')[0]!);
+    else say('');
+  }, [view.say, view.error, view.pending, view.reply?.content, view.reply?.cut, mode]);
+
+  const replyText = timing ? tokens.slice(0, shown).join('') : view.reply?.content ?? '';
+
+  return (
+    <div class="scene scene-msgs">
+      {view.request.length > 0 && (
+        <p class="req" aria-label="Request settings">
+          <span class="req__verb">request</span>
+          {view.request.map(([k, v]) => (
+            <span class="req__item" key={k}>
+              {k}: <strong>{v}</strong>
+            </span>
+          ))}
+        </p>
+      )}
+      <ol class="msgs" aria-label="Messages sent to the model">
+        {view.system && (
+          <li class="msg msg--system">
+            <span class="msg__role">system</span>
+            <span class="msg__text">{view.system}</span>
+          </li>
+        )}
+        {view.messages.map((m, i) => (
+          <li class={`msg msg--${m.role === 'assistant' ? 'assistant' : m.role === 'user' ? 'user' : 'unknown'}`} key={i}>
+            <span class="msg__role">{m.role}</span>
+            <span class="msg__text">{m.content}</span>
+          </li>
+        ))}
+      </ol>
+      <p class="msgs__arrow" aria-hidden="true">
+        ↓ the model answers
+      </p>
+      {view.error ? (
+        <p class="msg msg--error" role="status">
+          <span class="msg__role">400 error</span>
+          <span class="msg__text">{view.error}</span>
+        </p>
+      ) : view.reply ? (
+        <div class={`msg msg--assistant msg--reply${view.reply.cut ? ' msg--cut' : ''}`}>
+          <span class="msg__role">assistant</span>
+          {view.reply.mono ? <pre class="msg__text msg__mono">{replyText}</pre> : <span class="msg__text">{waiting ? '…' : replyText || '…'}</span>}
+          <span class="msg__meta">
+            {timing
+              ? `First words after ${timing.first} s. Finished after ${timing.total} s.`
+              : `stop_reason: ${view.reply.stopReason}${view.reply.tokens ? `, output tokens: ${view.reply.tokens.length}` : ''}`}
+          </span>
+        </div>
+      ) : (
+        <p class="msg msg--pending">Nothing sent yet.</p>
+      )}
+      {timing && (
+        <button type="button" class="btn" onClick={() => setReplay(replay + 1)}>
+          Play it again
+        </button>
+      )}
+      {cost && (
+        <table class="receipt">
+          <caption>
+            {config.prices?.label ?? 'Price list'}: ${config.prices?.input} per million input tokens, ${config.prices?.output} per million output tokens
+          </caption>
+          <tbody>
+            <tr>
+              <th scope="row">{config.usage.input.toLocaleString('en')} input tokens</th>
+              <td>{money(cost.input)}</td>
+            </tr>
+            <tr>
+              <th scope="row">{config.usage.output.toLocaleString('en')} output tokens</th>
+              <td>{money(cost.output)}</td>
+            </tr>
+            <tr class="receipt__total">
+              <th scope="row">This request, with your prices</th>
+              <td>{money(cost.total)}</td>
+            </tr>
+            <tr>
+              <th scope="row">10,000 requests like it</th>
+              <td>{Number.isFinite(cost.total) ? `$${(cost.total * 10000).toFixed(2)}` : '$?'}</td>
+            </tr>
+          </tbody>
+        </table>
+      )}
+      {view.note && <p class="scene-note">{view.note}</p>}
+    </div>
+  );
+}
+
 /* --------------------------------------------------------------- registry */
 
 export const SCENES: Record<string, (p: SceneProps) => JSX.Element | null> = {
@@ -440,6 +673,7 @@ export const SCENES: Record<string, (p: SceneProps) => JSX.Element | null> = {
   embeddings: EmbeddingsScene,
   attention: AttentionScene,
   context: ContextScene,
+  messages: MessagesScene,
 };
 
 export const SCENE_NAMES = Object.keys(SCENES);

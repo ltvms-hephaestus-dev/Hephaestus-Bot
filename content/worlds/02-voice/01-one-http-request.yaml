@@ -1,0 +1,115 @@
+id: one-http-request
+title: One HTTP request
+concepts:
+  - API request
+  - API key
+  - model and messages
+  - max tokens
+  - stop reason
+
+lesson: |
+  The robot has a brain. Your program still has no way to talk to it.
+
+  Model providers put the brain behind a web service. Your code sends an **HTTP
+  request**, and the answer comes back as JSON. An SDK wraps that request in one
+  function call.
+
+  Every provider asks for the same four things:
+
+  - an **API key**, sent in a header, that says who pays. Keep it in an
+    environment variable, never in your code.
+  - a **model** name: which brain to use.
+  - **messages**: the conversation so far, as a list. Each message has a `role`
+    and some `content`.
+  - a limit on the reply, here `max_tokens`. Generation stops when the limit is
+    reached, even in the middle of a sentence.
+
+  The response carries the text, a **stop reason** saying why the model stopped
+  (`end_turn` means it had finished; `max_tokens` means you cut it off) and a
+  token count.
+
+  Parameter names differ a little between providers. The shape does not.
+
+goal: |
+  Send the message as the **user**, and give the robot enough room to finish. Its
+  full answer is 12 tokens long. Try a smaller number first and watch the board.
+
+scene:
+  type: messages
+  needs: [role, max]
+  bind: { maxTokens: max }
+  request: { model: forge-1, max_tokens: "{{max}}" }
+  messages:
+    - { role: "{{role}}", content: "Who are you?" }
+  reply:
+    tokens: ["I", " am", " your", " robot", ",", " freshly", " forged", " and", " ready", " to", " work", "."]
+  cases:
+    - when: { role: "^(?!user$|assistant$).+" }
+      error: 'messages.0.role: "{{role}}" is not a role. Use "user" or "assistant".'
+    - when: { role: "^assistant$" }
+      error: "messages: a conversation has to start with a user message."
+
+challenge:
+  type: fill
+  code:
+    python: |
+      client = Client(api_key=os.environ["FORGE_API_KEY"])
+
+      reply = client.messages.create(
+          model="forge-1",
+          max_tokens={{max}},
+          messages=[
+              {"role": "{{role}}", "content": "Who are you?"},
+          ],
+      )
+    typescript: |
+      const apiKey = process.env.FORGE_API_KEY;
+      const client = new Client({ apiKey });
+
+      const reply = await client.messages.create({
+        model: "forge-1",
+        max_tokens: {{max}},
+        messages: [
+          { role: "{{role}}", content: "Who are you?" },
+        ],
+      });
+  blanks:
+    max:
+      placeholder: number
+      width: 6
+      accept: { number: { min: 12 } }
+      feedback: The reply is cut off. Look at the stop reason on the board.
+    role:
+      placeholder: role
+      width: 9
+      accept: { equals: user }
+      feedback: The message that opens a conversation comes from the `user`.
+
+hints:
+  - Two roles exist in a conversation, `user` and `assistant`. You are the one asking.
+  - The board shows `stop_reason`. While it says `max_tokens`, the limit is too low.
+  - "Use the role `user` and any limit of 12 or more, for example `100`."
+
+success: |
+  That is the whole trick: a list of messages goes in, text and some bookkeeping
+  come out. `max_tokens` is a ceiling, not a target, so a generous value costs
+  nothing when the answer is short. Always read the stop reason: a reply that
+  ends with `max_tokens` is unfinished, and showing it to a user as if it were
+  complete is a common bug.
+
+links:
+  - title: Get started with Claude
+    url: https://platform.claude.com/docs/en/get-started
+    kind: docs
+    note: The same request against a real API, in several languages.
+  - title: OpenRouter quickstart
+    url: https://openrouter.ai/docs/quickstart
+    kind: docs
+    note: Another provider's version. Compare the parameter names.
+  - title: Gemini API documentation
+    url: https://ai.google.dev/gemini-api/docs
+    kind: docs
+    note: A third shape for the same four ingredients.
+
+solution: { max: "100", role: user }
+wrong: { max: "5", role: user }

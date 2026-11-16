@@ -1,0 +1,106 @@
+id: saying-what-you-mean
+title: Saying what you mean
+concepts:
+  - prompting
+  - clear instructions
+  - examples
+  - separating instructions from data
+
+lesson: |
+  The model cannot read your mind. It continues the text you give it with what
+  is most likely to come next. A vague prompt has many likely continuations, so
+  you get a different shape of answer each time.
+
+  A good prompt removes the guessing. Write it the way you would brief a capable
+  new colleague who knows nothing about your project:
+
+  - **Say the task**, and what the result is for.
+  - **Say the format** exactly: length, structure, the literal words to use.
+  - **Show an example** of a good answer. One example often does more than a
+    paragraph of description.
+  - **Mark where the data starts and ends**, for instance with tags such as
+    `<ticket>`. Then text inside the data that looks like an instruction is
+    treated as data.
+
+  Things that add no information do not help: capital letters, exclamation
+  marks, flattery, threats. A role ("you are a support analyst") sets the tone,
+  but it is not a task.
+
+goal: |
+  Support needs a one-line summary and a priority for every ticket, in a form a
+  script can split into two fields. Click each prompt to see what comes back,
+  then choose the one you would ship.
+
+scene:
+  type: messages
+  needs: [choice]
+  idle: Click a prompt and I will show you what it gets back.
+  request: { model: forge-1, max_tokens: "200" }
+  cases:
+    - when: { choice: "^vague$" }
+      messages:
+        - { role: user, content: "Summarise this ticket.\n\nSince the 2.3 update I cannot log in. I am locked out of billing and my invoice is due tomorrow!" }
+      reply: "The customer is writing to report that, following the recent update to version 2.3, they have been unable to log in to their account. They explain that this has left them without access to the billing section, and they add that an invoice falls due tomorrow, which makes the matter pressing for them."
+      note: Correct, but long, and there is no priority. Run it again and the shape changes.
+    - when: { choice: "^loud$" }
+      messages:
+        - { role: user, content: "SUMMARISE THIS TICKET!!! Be EXTREMELY accurate and DO NOT ramble.\n\nSince the 2.3 update I cannot log in. I am locked out of billing and my invoice is due tomorrow!" }
+      reply: "Summary: Login fails after update 2.3, billing is blocked. This looks urgent! Let me know if you need anything else."
+      note: Shorter, but the format is still the model's guess. Your script cannot rely on it.
+    - when: { choice: "^persona$" }
+      messages:
+        - { role: user, content: "You are a world-class support analyst with 20 years of experience.\n\nSince the 2.3 update I cannot log in. I am locked out of billing and my invoice is due tomorrow!" }
+      reply: "I am sorry to hear that. Let us get you back in. First, could you tell me which browser you are using and whether you see an error message?"
+      note: With a role and no task, the model answered the customer instead of summarising the ticket.
+    - when: { choice: "^specific$" }
+      messages:
+        - { role: user, content: "Summarise the ticket inside <ticket> tags in one sentence of at most 20 words. On a new line, write \"Priority: \" followed by low, medium or high.\n\nExample:\nCustomer asks how to export invoices as PDF.\nPriority: low\n\n<ticket>Since the 2.3 update I cannot log in. I am locked out of billing and my invoice is due tomorrow!</ticket>" }
+      reply: "Customer cannot log in since update 2.3 and is locked out of billing before an invoice is due.\nPriority: high"
+      note: Two lines, the same shape every time. A script can split this.
+
+challenge:
+  type: choice
+  options:
+    - id: vague
+      text: "`Summarise this ticket.` followed by the ticket text"
+      why: This says what to do but not what the answer should look like, so the shape changes from run to run.
+    - id: loud
+      text: "`SUMMARISE THIS TICKET!!! Be EXTREMELY accurate and DO NOT ramble.` followed by the ticket text"
+      why: Capital letters add no information. The format is still left to chance.
+    - id: persona
+      text: "`You are a world-class support analyst with 20 years of experience.` followed by the ticket text"
+      why: A role is not a task. The model started helping the customer instead of summarising.
+    - id: specific
+      text: "The task, an exact two-line format, one example, and the ticket wrapped in `<ticket>` tags"
+      correct: true
+
+hints:
+  - Click all four and compare the replies on the board. Which one could a script split into a summary and a priority?
+  - Three of the prompts never say what the output should look like.
+  - Choose the prompt that states the format, gives an example and wraps the ticket in tags.
+
+success: |
+  Nothing clever happened. The winning prompt says what to do, what the output
+  looks like, shows one example and fences off the data. Writing that takes a
+  minute longer, and it is the difference between a demo and something a script
+  can depend on.
+
+  A format described in words is still a request, though, not a guarantee. The
+  last level of this world makes it one.
+
+links:
+  - title: Prompt engineering overview
+    url: https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview
+    kind: docs
+    note: The techniques from this level and several more, in the order worth trying them.
+  - title: Prompt engineering interactive tutorial
+    url: https://github.com/anthropics/prompt-eng-interactive-tutorial
+    kind: course
+    note: Nine chapters of exercises you run yourself.
+  - title: Prompt Engineering Guide
+    url: https://www.promptingguide.ai
+    kind: article
+    note: A broad, provider-neutral reference.
+
+solution: [specific]
+wrong: [loud]

@@ -17,7 +17,7 @@ The order matters. Each world answers the question the one before it raises.
 | # | World | The robot gets | Status |
 |---|---|---|---|
 | 1 | How LLMs work | Brain | **Playable, 7 levels** |
-| 2 | LLMs from code | Voice | Planned, 7 levels |
+| 2 | LLMs from code | Voice | **Playable, 7 levels** |
 | 3 | Knowledge and tools | Memory and hands | Planned, 7 levels |
 | 4 | Model Context Protocol | Universal plug | Planned, 7 levels |
 | 5 | Agents | Autonomy | Planned, 7 levels |
