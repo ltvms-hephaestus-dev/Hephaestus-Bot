@@ -105,6 +105,9 @@ success: |
   second turn. And generating the schema from the function, as an MCP SDK does,
   would have made the mismatch impossible.
 
+  That was an agent you were debugging. Next, the agent is working on your
+  code, and the first thing you control is how you ask.
+
 links:
   - title: Effective context engineering for AI agents
     url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents

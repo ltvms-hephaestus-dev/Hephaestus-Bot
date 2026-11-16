@@ -56,6 +56,13 @@ yet match its own [build prompt](./kickoff/BUILD_PROMPT.md).
   (workflow or agent, which defence, which architecture) are what those levels teach,
   and each option shows its own outcome on the board before the player commits.
 
+- **World 7 levels 4 to 6 were written by a smaller model (Claude Sonnet) from a
+  prompt**, kept in `docs/prompts/`. The design and the failing tests were written
+  first; the builder wrote the lesson files. Review then found three things the tests
+  could not: an answer the player had no way to discover (the tool name was never
+  shown), a mislabelled link, and a board hint pointing the wrong way. All three were
+  fixed, and all 48 levels were replayed in a browser.
+
 ## Known gaps
 
 - **Interface strings are still inside the components.** The build prompt asks for one

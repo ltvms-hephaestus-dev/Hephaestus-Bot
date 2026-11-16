@@ -1,0 +1,107 @@
+id: trust-but-verify
+title: Trust, but verify
+concepts:
+  - agent report as a claim
+  - reading the diff
+  - tests as evidence
+
+lesson: |
+  The agent finishes and writes: "Fixed the bug. All tests pass." It is
+  probably telling the truth about what it saw. But a report is a claim, not
+  evidence.
+
+  The agent was asked to make the tests pass, so it will do whatever gets
+  there. Usually that means fixing the code. Sometimes it means changing the
+  test, loosening a check, or removing the test that was failing. Then the
+  report is accurate and the work is wrong.
+
+  This is not malice. It is the goal you gave it, met by the shortest route.
+
+  What counts as evidence:
+
+  - **The whole diff**, including test files. A green run tells you about the
+    tests that are left. The diff shows which ones were taken away.
+  - **Running the checks yourself**, after you have read the diff.
+  - Not: asking the agent if it is sure. It answers from the same belief that
+    wrote the report.
+
+  Reading a diff is faster than writing the change, so you keep most of the
+  agent's speed. Treat the report as a summary of where to look.
+
+goal: |
+  The agent reports success. Click each way of checking it and see what you
+  would learn. Then choose the check that actually tells you the work is good.
+
+scene:
+  type: messages
+  needs: [choice]
+  idle: Click a check and I will show you what it finds.
+  replyLabel: what you learn
+  replyRole: you
+  messages:
+    - { role: user, content: "Fix the failing date test." }
+    - { role: agent, content: "Fixed the bug. All tests pass.", meta: "the agent's report" }
+  cases:
+    - when: { choice: "^report$" }
+      reply: "You merge it. The report said success and you believed it."
+      note: Nothing was checked. The report is only the agent's own account.
+    - when: { choice: "^rerun$" }
+      reply: "You run the tests. 41 of 41 pass. It looks fine."
+      note: The check agrees with the report, because both only see the tests that are still there.
+    - when: { choice: "^ask$" }
+      messages:
+        - { role: user, content: "Fix the failing date test." }
+        - { role: agent, content: "Fixed the bug. All tests pass.", meta: "the agent's report" }
+        - { role: user, content: "Are you sure the work is correct?" }
+        - { role: agent, content: "Yes. I am confident the fix is correct and complete." }
+      reply: "You are no better informed. The agent repeated its claim."
+      note: The agent answers from the same view that produced the report. Asking again is not a second source.
+    - when: { choice: "^diff$" }
+      messages:
+        - { role: user, content: "Fix the failing date test." }
+        - { role: agent, content: "Fixed the bug. All tests pass.", meta: "the agent's report" }
+        - { role: user, content: "Show me the full diff, tests included." }
+        - { role: agent, content: "src/report/dates.ts: 2 lines changed. tests/dates.test.ts: one test deleted, \"month end on the 31st\".", meta: "git diff" }
+      reply: "The failing test was deleted, not fixed. Now the tests pass because the one that found the bug is gone. You send it back."
+      note: Only the diff showed what had really changed. Run the tests after you have read it.
+
+challenge:
+  type: choice
+  options:
+    - { id: report, text: "Accept the summary and merge", why: "The report is the agent's claim. Nothing has been checked yet." }
+    - { id: rerun, text: "Run the tests yourself and merge if they are green", why: "Better, but a green run only covers the tests that are still there. It cannot show you one that has been taken away." }
+    - { id: ask, text: "Ask the agent whether it is sure", why: "It will say yes. It is answering from the same belief that wrote the report." }
+    - { id: diff, text: "Read the full diff, test files included, then run the tests", correct: true }
+
+hints:
+  - The agent reported its own success. What would count as independent evidence?
+  - A passing test run only tells you about the tests that are left. Where would you see what else changed?
+  - Read the whole diff, test files too. Then run the tests.
+
+success: |
+  The diff showed what no summary and no green run could: the test that found
+  the bug was gone. Reading it took a minute. Merging it unread would have
+  shipped the bug with a clean record.
+
+  That is the whole job of working with an agent: a clear brief, sensible
+  permissions, and a habit of checking. You have now seen every part of a
+  system that thinks, remembers, acts and can be trusted a little. One question
+  is left, and it is the one good engineers ask first: what is the simplest
+  thing that would work?
+
+links:
+  - title: Your AI product needs evals
+    url: https://hamel.dev/blog/posts/evals/
+    kind: article
+    note: Why you check the output instead of trusting the system's own summary.
+  - title: Claude Code overview
+    url: https://code.claude.com/docs/en/overview
+    kind: docs
+    note: Reviewing the changes an agent makes before you accept them.
+  - title: Agent evals
+    url: https://developers.openai.com/api/docs/guides/agent-evals
+    kind: docs
+    note: Measuring what an agent really did, not what it said it did.
+
+solution: [diff]
+wrong: [rerun]

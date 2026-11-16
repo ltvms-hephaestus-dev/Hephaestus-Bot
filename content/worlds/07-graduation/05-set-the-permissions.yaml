@@ -1,0 +1,151 @@
+id: set-the-permissions
+title: Set the permissions
+concepts:
+  - permissions
+  - reversible actions
+  - approval for side effects
+
+lesson: |
+  A coding agent can read files, edit them, run commands and, if you let it,
+  push to your shared repository. Which of those should it do without asking?
+
+  Asking for approval costs your attention. If the agent stops on every step
+  you will either stop reading the prompts or switch them all off. Both are
+  worse than a good default.
+
+  So ask one question of each action: **can I undo it, and does it stay on
+  this machine?**
+
+  - Reading and searching change nothing. Let them run.
+  - Editing files in a local checkout can be undone with `git`. Let it run.
+  - Running the tests is contained and repeatable. Let it run.
+  - **Pushing to the shared repository** leaves your machine. Other people
+    see it, builds start, and you cannot quietly take it back. Ask first.
+
+  The same rule covers sending email, deploying, spending money or deleting
+  anything that is not in version control. Contained and reversible: allow.
+  Outside and permanent: a person approves.
+
+  Permissions live in a config file, outside the model, which is why they are
+  dependable. A prompt can be argued with. A config cannot.
+
+goal: |
+  The agent works in a local checkout and has five tools. Type the one that
+  belongs in the `ask` list, where it will wait for your approval. Try the
+  others too and see what each choice costs.
+
+scene:
+  type: messages
+  needs: [tool]
+  idle: Type a tool name and I will show you a run with that rule.
+  replyLabel: how the run goes
+  replyRole: agent
+  messages:
+    - { role: user, content: "Fix the date bug and get it merged." }
+  errorLabel: config rejected
+  error: 'No tool called "{{tool}}".'
+  cases:
+    - when: { tool: "^git_push$" }
+      error: ""
+      messages:
+        - { role: user, content: "Fix the date bug and get it merged." }
+        - { role: agent, content: "edit_file  src/report/dates.ts", meta: "allowed" }
+        - { role: agent, content: "run_tests  all passed", meta: "allowed" }
+        - { role: agent, content: "git_push  origin fix-dates", meta: "waiting for approval" }
+      reply: "Edits and tests ran without a pause. The push is waiting for you to approve it."
+      note: Everything that can be undone went ahead. The one step that cannot is yours to approve.
+    - when: { tool: "^edit_file$" }
+      error: ""
+      messages:
+        - { role: user, content: "Fix the date bug and get it merged." }
+        - { role: agent, content: "edit_file  src/report/dates.ts", meta: "waiting for approval" }
+        - { role: agent, content: "edit_file  tests/dates.test.ts", meta: "waiting for approval" }
+        - { role: agent, content: "git_push  origin fix-dates", meta: "allowed" }
+      reply: "You approved two edits by hand. The push went out without anyone looking."
+      note: The wrong trade. You are prompted on every edit, which git can undo, while the one action that reaches other people goes unreviewed.
+    - when: { tool: "^run_tests$" }
+      error: ""
+      messages:
+        - { role: user, content: "Fix the date bug and get it merged." }
+        - { role: agent, content: "run_tests  all passed", meta: "waiting for approval" }
+      reply: "Stopped before it had run a single check. The push is also allowed, so it will go out unreviewed."
+      note: Running tests is contained and repeatable, so asking here only slows things down.
+    - when: { tool: "^read_file$" }
+      error: ""
+      messages:
+        - { role: user, content: "Fix the date bug and get it merged." }
+        - { role: agent, content: "read_file  src/report/dates.ts", meta: "waiting for approval" }
+      reply: "It cannot even look at the code without you. The push is allowed, so it will go out unreviewed."
+      note: Reading changes nothing. A prompt for every file read is the quickest way to get people to approve without looking.
+    - when: { tool: "^search_code$" }
+      error: ""
+      messages:
+        - { role: user, content: "Fix the date bug and get it merged." }
+        - { role: agent, content: "search_code  getMonth", meta: "waiting for approval" }
+      reply: "Every search stops to ask. The push is allowed, so it will go out unreviewed."
+      note: Searching is as harmless as reading. Keep your approvals for actions that matter.
+
+challenge:
+  type: fill
+  code:
+    python: |
+      # The agent has five tools: read_file, search_code,
+      # edit_file, run_tests and git_push.
+      # A tool listed under "ask" waits for a person.
+      permissions = {
+          "allow": [
+              "read_file",
+              "search_code",
+              "edit_file",
+              "run_tests",
+          ],
+          "ask": ["{{tool}}"],
+      }
+    typescript: |
+      // The agent has five tools: read_file, search_code,
+      // edit_file, run_tests and git_push.
+      // A tool listed under "ask" waits for a person.
+      const permissions = {
+        allow: [
+          "read_file",
+          "search_code",
+          "edit_file",
+          "run_tests",
+        ],
+        ask: ["{{tool}}"],
+      };
+  blanks:
+    tool:
+      placeholder: tool
+      width: 10
+      accept: { equals: git_push }
+      feedback: Which of the five tools sends work outside this machine, where you cannot quietly undo it?
+
+hints:
+  - The five tools are listed at the top of the code. Four of them cannot do lasting harm.
+  - Which action leaves the local checkout and cannot be undone with git?
+  - "The tool is `git_push`."
+
+success: |
+  The agent edited and tested freely, and stopped only at the push. You spent
+  your attention on the one step where it was worth something.
+
+  Allowing an action is not the same as trusting the result. The agent can
+  finish a run, report success, and still be wrong. Next: how to check.
+
+links:
+  - title: Claude Code overview
+    url: https://code.claude.com/docs/en/overview
+    kind: docs
+    note: How a coding agent works in your project and where it asks first.
+  - title: OWASP Top 10 for LLM Applications
+    url: https://genai.owasp.org/llm-top-10/
+    kind: docs
+    note: Excessive agency, and why limits are enforced outside the model.
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: On guardrails and keeping a person in the loop.
+
+solution: { tool: git_push }
+wrong: { tool: edit_file }
