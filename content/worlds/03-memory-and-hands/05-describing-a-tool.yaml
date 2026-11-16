@@ -1,0 +1,118 @@
+id: describing-a-tool
+title: Describing a tool
+concepts:
+  - tool definition
+  - input schema
+  - descriptions matter
+
+lesson: |
+  The model learns about your tools from one place only: the **tool
+  definitions** you send with the request. It cannot see your code. A definition
+  has three parts:
+
+  - a **name**, such as `get_weather`;
+  - a **description** in plain language: what the tool does, when to use it,
+    what it returns;
+  - an **input schema**: a JSON Schema for the arguments. This is the schema
+    language from the end of World 2.
+
+  The description is a prompt. The model reads it to decide *whether* to call
+  the tool and *how*. A vague description gives you a tool that is never used,
+  or used at the wrong moments. Write it for a capable newcomer: say what it is
+  for, and say what it is not for.
+
+  The schema does the same for arguments. Types, required fields and enums stop
+  the model inventing parameters your function does not accept.
+
+goal: |
+  This definition has an empty description and does not say that `city` is
+  needed. Write a description of at least 20 characters, and make `city` a
+  required string.
+
+scene:
+  type: messages
+  request: { model: forge-1, tools: "your definition" }
+  messages:
+    - { role: user, content: "Is it raining in Lisbon?" }
+  reply: I am not able to check live weather. You could look at a forecast website.
+  note: With an empty description the model has no idea this tool could answer the question.
+  cases:
+    - when: { json: '"description"\s*:\s*"[^"]{20,}"[\s\S]*"required"\s*:\s*\[\s*"city"' }
+      reply:
+        mono: true
+        stopReason: tool_use
+        content: "tool call\n  name:  get_weather\n  input: { \"city\": \"Lisbon\" }"
+      note: Now the model knows what the tool is for and what it must send.
+    - when: { json: '"description"\s*:\s*"[^"]{20,}"' }
+      reply:
+        mono: true
+        stopReason: tool_use
+        content: "tool call\n  name:  get_weather\n  input: {}"
+      note: The model calls the tool, but nothing told it that a city is required, so it sent none.
+
+challenge:
+  type: json
+  starter: |
+    {
+      "name": "get_weather",
+      "description": "",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "city": {}
+        },
+        "required": []
+      }
+    }
+  rules:
+    - { path: name, op: equals, value: get_weather, message: 'Keep the name "get_weather".' }
+    - { path: description, op: minLength, value: 20, message: "Write a description of at least 20 characters: what does the tool do, and when should it be used?" }
+    - { path: input_schema.type, op: equals, value: object, message: 'Keep "input_schema" an object.' }
+    - { path: input_schema.properties.city.type, op: equals, value: string, message: 'Give "city" a "type" of "string".' }
+    - { path: input_schema.required, op: includes, value: city, message: 'Add "city" to "required".' }
+
+hints:
+  - Start with the description. Watch the reply on the board change once the model can tell what the tool is for.
+  - 'A property gets a type like this: `"city": { "type": "string" }`.'
+  - 'Use a description such as `"Get the current weather for a city."`, and set `"required": ["city"]`.'
+
+success: |
+  The function behind the tool did not change at all. Only its description
+  did, and the model went from refusing to calling it correctly.
+
+  When a tool misbehaves in practice, this is the first place to look. Most
+  "the model used my tool wrongly" bugs are fixed in the description or the
+  schema, not in the code.
+
+links:
+  - title: Tool use with Claude
+    url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+    kind: docs
+    note: Includes guidance on writing descriptions that work.
+  - title: Getting started with JSON Schema
+    url: https://json-schema.org/learn/getting-started-step-by-step
+    kind: docs
+    note: Everything you can say in an input schema.
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: Its appendix on tool design is short and worth reading twice.
+
+solution: |
+  {
+    "name": "get_weather",
+    "description": "Get the current weather for a city. Use it for questions about weather right now.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "city": { "type": "string" }
+      },
+      "required": ["city"]
+    }
+  }
+wrong: |
+  {
+    "name": "get_weather",
+    "description": "Weather",
+    "input_schema": { "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] }
+  }

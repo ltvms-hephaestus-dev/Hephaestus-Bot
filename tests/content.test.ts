@@ -10,7 +10,7 @@ import { check, checkBlank, referenceAnswer } from '../src/lib/check';
 import { loadBeyond, loadWorlds, topicTree } from '../src/lib/content';
 import { LevelSchema } from '../src/lib/schema';
 import { TEMPLATES } from '../src/lib/templates';
-import { analogy, bill, fitWindow, reshape, resolveMessages, SCENE_NAMES, streamTiming } from '../src/scenes';
+import { analogy, bill, fitWindow, reshape, resolveMessages, runLoop, SCENE_NAMES, streamTiming, topK } from '../src/scenes';
 
 const worlds = loadWorlds();
 const levels = worlds.flatMap((w) => w.levels.map((l) => ({ w, l, name: `${w.id}/${l.id}` })));
@@ -123,14 +123,16 @@ describe('scenes agree with the lessons that use them', () => {
   });
 });
 
-describe('world 2 boards agree with their lessons', () => {
+describe('request/reply boards agree with their lessons (World 2)', () => {
   const find = (id: string) => levels.find((x) => x.l.id === id)!.l;
   const asValues = (l: ReturnType<typeof find>, answer: unknown): Record<string, string> =>
     l.challenge.type === 'fill'
       ? (answer as Record<string, string>)
       : l.challenge.type === 'choice'
         ? { choice: (answer as string[]).join(',') }
-        : { json: answer as string };
+        : l.challenge.type === 'order'
+          ? { order: (answer as string[]).join(',') }
+          : { json: answer as string };
   const view = (id: string, answer: unknown) => resolveMessages(find(id).scene, asValues(find(id), answer));
 
   it('every request/reply board shows a clean reply for the reference answer', () => {
@@ -219,6 +221,133 @@ describe('world 2 boards agree with their lessons', () => {
     expect(['low', 'medium', 'high']).not.toContain(before.priority);
     expect(['low', 'medium', 'high']).toContain(after.priority);
     expect(JSON.parse((l.challenge as any).starter)).toBeTypeOf('object');
+  });
+});
+
+describe('the full path is written', () => {
+  it('has 45 levels in 7 worlds and nothing left planned', () => {
+    expect(worlds.map((w) => w.levels.length)).toEqual([7, 7, 7, 7, 7, 6, 4]);
+    expect(levels).toHaveLength(45);
+    for (const w of worlds) expect(w.planned ?? [], w.id).toHaveLength(0);
+  });
+
+  it('every level id is unique across the whole game', () => {
+    expect(new Set(levels.map((x) => x.l.id)).size).toBe(levels.length);
+  });
+});
+
+describe('boards agree with their lessons (Worlds 3 to 7)', () => {
+  const find = (id: string) => levels.find((x) => x.l.id === id)!.l;
+  const view = (id: string, values: Record<string, string>) => resolveMessages(find(id).scene, values);
+
+  it('search by meaning: the answer keeps both refund passages and nothing else', () => {
+    const l = find('search-by-meaning');
+    const chunks = (l.scene as any).chunks as { text: string; score: number }[];
+    const k = Number((l.solution as Record<string, string>).k);
+    const picked = topK(chunks, k);
+    expect(picked.every((c) => c.score > 0.7)).toBe(true);
+    expect(chunks.filter((c) => c.score > 0.7)).toHaveLength(k);
+    expect(topK(chunks, 0)).toEqual([]);
+    expect(topK(chunks, 1)[0]!.text).toMatch(/Refunds/);
+    expect(picked[0]!.text.toLowerCase()).not.toMatch(/money|back/); // no shared keywords, as the note says
+  });
+
+  it('a loop with tools: only the right stop reason lets the agent finish', () => {
+    const s = find('a-loop-with-tools').scene as any;
+    expect(new RegExp(s.gate, 'i').test('tool_use')).toBe(true);
+    expect(new RegExp(s.gate, 'i').test('end_turn')).toBe(false);
+    expect(runLoop(s.steps, 99, true)).toEqual({ ran: s.steps.length, outcome: 'finished' });
+    expect(runLoop(s.steps, 99, false)).toEqual({ ran: 1, outcome: 'no-loop' });
+  });
+
+  it('knowing when to stop: the accepted range is exactly the budgets that finish within policy', () => {
+    const l = find('knowing-when-to-stop');
+    const steps = (l.scene as any).steps;
+    const needed = steps.filter((s: any) => s.who === 'model').length;
+    const accept = (l.challenge as any).blanks.n.accept.number;
+    expect(accept).toEqual({ min: needed, max: 10 });
+    expect(runLoop(steps, needed - 1).outcome).toBe('budget');
+    expect(runLoop(steps, needed).outcome).toBe('finished');
+    expect(runLoop(steps, 2).ran).toBe(4); // found the cause, never opened the ticket
+    expect(runLoop(steps, 0).outcome).toBe('idle');
+  });
+
+  it('describing a tool: the model only calls the tool correctly with a description and a required city', () => {
+    const l = find('describing-a-tool');
+    expect(view('describing-a-tool', { json: l.solution as string }).reply?.content).toMatch(/"city": "Lisbon"/);
+    expect(view('describing-a-tool', { json: (l.challenge as any).starter }).reply?.stopReason).toBe('end_turn');
+    const noRequired = (l.solution as string).replace('"required": ["city"]', '"required": []');
+    expect(view('describing-a-tool', { json: noRequired }).reply?.content).toMatch(/input: \{\}/);
+  });
+
+  it('when tools fail: only the error result lets the model correct itself', () => {
+    expect(view('when-tools-fail', { choice: 'error' }).reply?.content).toMatch(/"Lisbon"/);
+    expect(view('when-tools-fail', { choice: 'crash' }).error).toBeDefined();
+    expect(view('when-tools-fail', { choice: 'fake' }).reply?.content).toMatch(/sunny/);
+  });
+
+  it('MCP levels use the current revision and the stateless headers', () => {
+    const l = find('how-messages-travel');
+    expect((l.solution as Record<string, string>).version).toBe('2026-07-28');
+    expect(view('how-messages-travel', { version: '2026-07-28' }).error).toBeUndefined();
+    expect(view('how-messages-travel', { version: '2024-11-05' }).error).toMatch(/Unsupported protocol version/);
+    expect(view('how-messages-travel', {}).pending).toBe(true);
+    const text = JSON.stringify(l);
+    for (const header of ['MCP-Protocol-Version', 'Mcp-Method', 'Mcp-Name']) expect(text).toContain(header);
+    expect(view('reading-the-wire', { json: find('reading-the-wire').solution as string }).reply?.content).toMatch(/"isError": false/);
+    expect(view('write-a-server', { kind: 'tool' }).reply?.content).toMatch(/search_tickets/);
+    expect(view('write-a-server', { kind: 'resource' }).reply?.content).toMatch(/tools: \[ \]/);
+    expect(view('write-a-server', { kind: 'thing' }).error).toBeDefined();
+  });
+
+  it('reading a trace: the numbers add up and the answer is the step where input jumped', () => {
+    const l = find('reading-a-trace');
+    const metas = ((l.scene as any).messages as { meta?: string }[]).map((m) => m.meta ?? '');
+    const inputs = metas.map((m) => /input ([\d,]+)/.exec(m)?.[1]).filter(Boolean).map((n) => Number(n!.replace(/,/g, '')));
+    expect(inputs.reduce((a, b) => a + b, 0)).toBe(102500);
+    expect(String((l.scene as any).reply)).toContain('102,500');
+    const seconds = metas.map((m) => /([\d.]+) s$/.exec(m)?.[1]).filter(Boolean).map(Number);
+    expect(Math.round(seconds.reduce((a, b) => a + b, 0))).toBe(29);
+    expect(metas[Number((l.solution as Record<string, string>).step)]).toMatch(/returns 48,000 tokens/);
+  });
+
+  it('fix a broken run: the right name ends the run, any other repeats the failure', () => {
+    expect(view('fix-a-broken-run', { param: 'status' }).reply?.content).toMatch(/closed/);
+    expect(view('fix-a-broken-run', { param: 'state' }).reply?.content).toMatch(/budget used up/);
+    expect(view('fix-a-broken-run', {}).reply?.content).toMatch(/budget used up/);
+  });
+
+  it('every clickable option on a request/reply board shows its own outcome', () => {
+    for (const { l } of levels) {
+      if (l.scene.type !== 'messages' || l.challenge.type !== 'choice' || l.challenge.multiple) continue;
+      if (!((l.scene as any).needs ?? []).includes('choice')) continue;
+      const seen = new Set<string>();
+      for (const o of l.challenge.options) {
+        const v = resolveMessages(l.scene, { choice: o.id });
+        expect(v.reply ?? v.error, `${l.id}/${o.id}`).toBeDefined();
+        seen.add(JSON.stringify([v.reply?.content, v.error, v.note, v.messages]));
+      }
+      expect(seen.size, l.id).toBe(l.challenge.options.length);
+    }
+  });
+});
+
+describe('lesson files', () => {
+  it('have no text silently cut off by a YAML comment', () => {
+    // In YAML, " #" starts a comment outside quotes. "Ticket #482 is open" would lose its ending.
+    const dir = path.resolve('content/worlds');
+    for (const w of fs.readdirSync(dir)) {
+      for (const f of fs.readdirSync(path.join(dir, w))) {
+        let inBlock = -1;
+        for (const [i, line] of fs.readFileSync(path.join(dir, w, f), 'utf8').split('\n').entries()) {
+          const indent = line.search(/\S/);
+          if (inBlock >= 0 && (indent > inBlock || indent === -1)) continue;
+          inBlock = /:\s*[|>][-+]?\s*$/.test(line) ? indent : -1;
+          const bare = line.replace(/"(?:[^"\\]|\\.)*"|'(?:[^']|'')*'/g, '""');
+          expect(/\S\s+#/.test(bare), `${w}/${f}:${i + 1} ${line.trim()}`).toBe(false);
+        }
+      }
+    }
   });
 });
 

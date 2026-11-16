@@ -1,0 +1,92 @@
+id: workflow-or-agent
+title: Workflow or agent
+concepts:
+  - workflow
+  - agent
+  - start simple
+
+lesson: |
+  Not everything with a model and tools should be an agent. There are two ways
+  to organise the work, and the difference is **who decides the next step**.
+
+  In a **workflow**, you do. Your code calls the model at fixed points along a
+  path you designed: translate, then check, then save. The model fills in each
+  step. It never chooses the route.
+
+  In an **agent**, the model does. It picks its own next step from what it has
+  seen so far, in the loop you just built.
+
+  Agents are flexible, and that flexibility has a price. A run takes more model
+  calls, so it is slower and costs more. Two runs can take different paths, so
+  it is harder to test. And a mistake early on carries into every later step.
+
+  So the rule experienced teams follow is: **use the simplest thing that
+  works.** One good prompt first. A workflow if the steps are known. An agent
+  only when you truly cannot write the steps down in advance.
+
+goal: |
+  Every night, each new product description must be translated into three
+  languages and checked against a length limit. The steps never change. Click
+  each design to see a night's run, then choose.
+
+scene:
+  type: messages
+  needs: [choice]
+  idle: Click a design and I will show you a night's work.
+  replyLabel: the morning after
+  replyRole: result
+  cases:
+    - when: { choice: "^workflow$" }
+      messages:
+        - { role: your code, content: "For each description: call the model to translate into French, German, Spanish." }
+        - { role: your code, content: "Check each translation against the length limit. Too long: ask the model to shorten it once." }
+        - { role: your code, content: "Save." }
+      reply: 120 descriptions done. Every one took the same three steps. 360 model calls, and a failure points at one step.
+    - when: { choice: "^agent$" }
+      messages:
+        - { role: model, content: "Decides to translate, then decides to re-read the style guide, then translates again…" }
+        - { role: model, content: "On item 37, decides the length check is unnecessary and skips it." }
+        - { role: model, content: "On item 81, decides to also rewrite the English original." }
+      reply: 120 descriptions, 1,900 model calls, three over the length limit, and one original changed. Hard to say why.
+    - when: { choice: "^bigger$" }
+      messages:
+        - { role: your code, content: "Send all 120 descriptions and all instructions in one request to the largest model." }
+      reply: The reply was cut off at description 64. Some checks were forgotten half way down.
+
+challenge:
+  type: choice
+  options:
+    - { id: agent, text: "An agent with translate, check and save tools, told to get it done", why: "The steps are known in advance. Letting the model choose them adds cost and surprises and gains nothing." }
+    - { id: bigger, text: "One request with everything, sent to the biggest model", why: "One huge call is slow, hits output limits and cannot be checked step by step." }
+    - { id: workflow, text: "A workflow: your code runs translate, check, save for each item", correct: true }
+
+hints:
+  - Can you write the steps down before the run starts? Then nobody needs to decide them at run time.
+  - Compare the number of model calls and the surprises in each run on the board.
+  - Choose the workflow.
+
+success: |
+  When the path is known, a workflow is cheaper, faster and far easier to test,
+  and it is still an AI system. Many products that are called agents are
+  workflows, and are better for it.
+
+  Reach for an agent when the steps depend on what is found along the way:
+  debugging, research, open-ended requests. The next level shows the shapes a
+  workflow can take.
+
+links:
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: The source of the workflow and agent distinction used here.
+  - title: OpenAI agents guide
+    url: https://developers.openai.com/api/docs/guides/agents
+    kind: docs
+    note: Another vendor's view of when an agent is the right tool.
+  - title: AI Agents for Beginners
+    url: https://github.com/microsoft/ai-agents-for-beginners
+    kind: course
+    note: Lessons on agentic design patterns with code.
+
+solution: [workflow]
+wrong: [agent]

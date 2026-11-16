@@ -7,19 +7,3 @@ summary: >-
   A frozen model knows nothing about your documents and cannot act. This world adds
   both: retrieval puts the right knowledge in the context window, and tool calling
   lets the model ask your code to do something.
-# Not written yet. Move a level out of this list when you add its file.
-planned:
-  - title: "What the model cannot know"
-    concepts: ["knowledge cutoff", "private data", "grounding"]
-  - title: "Search by meaning"
-    concepts: ["embedding search", "cosine similarity", "vector store"]
-  - title: "Retrieve, then generate"
-    concepts: ["RAG", "chunking", "citations"]
-  - title: "The model asks, your code acts"
-    concepts: ["tool calling", "function calling"]
-  - title: "Describing a tool"
-    concepts: ["tool definition", "JSON Schema", "descriptions matter"]
-  - title: "The round trip"
-    concepts: ["tool call", "tool result", "second model turn"]
-  - title: "When tools fail"
-    concepts: ["error results", "retries", "validation"]

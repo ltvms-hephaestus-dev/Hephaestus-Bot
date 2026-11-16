@@ -1,0 +1,73 @@
+id: plan-and-review
+title: Plan and review
+concepts:
+  - orchestrator and workers
+  - evaluator and optimizer
+  - feedback loop
+
+lesson: |
+  Two more shapes sit between a fixed workflow and a free agent. In both, a
+  model makes some decisions inside a structure you still control.
+
+  **Orchestrator and workers.** Sometimes you cannot know the sub-tasks in
+  advance: "update every file that uses the old function" depends on what is
+  found. So one model call, the **orchestrator**, reads the task and breaks it
+  into parts. Each part goes to a **worker**, a separate model call with its
+  own fresh context. The orchestrator then combines what the workers return.
+
+  **Evaluator and optimizer.** One call produces a draft. A second call, with
+  different instructions, judges the draft against clear criteria and writes
+  feedback. The draft is revised, and the cycle repeats until it passes or a
+  limit is reached. This is worth it when quality can be judged and improves
+  with revision, as with translation or code that must pass tests.
+
+  The two fit together well: split, work, combine, then review.
+
+goal: |
+  A team uses both shapes to write release notes from forty merged changes. Put
+  the stages in order.
+
+scene:
+  type: robot
+  say: Forty changes is too much for one pass. Tell me how to split the work, and who checks it.
+  note: "Criteria the evaluator uses: every change is mentioned, nothing is invented, and the notes fit on one page."
+
+challenge:
+  type: order
+  items:
+    - { id: split, text: The orchestrator reads the task and groups the changes into parts }
+    - { id: work, text: "Workers each summarise one part, in their own context" }
+    - { id: combine, text: The orchestrator combines the summaries into a draft }
+    - { id: judge, text: An evaluator checks the draft against the criteria }
+    - { id: revise, text: "It fails: the feedback goes back and the draft is revised" }
+    - { id: accept, text: "It passes: the release notes are returned" }
+
+hints:
+  - Splitting comes before working, and combining comes after.
+  - There is nothing to evaluate until a combined draft exists.
+  - "Split, work, combine, evaluate, revise, accept."
+
+success: |
+  Each worker saw only its own handful of changes, so none of them had forty
+  diffs crowding its window. The evaluator saw only the draft and the criteria,
+  so it judged the result rather than defending it.
+
+  Notice the limit hidden in "until it passes". A review loop needs a maximum
+  number of rounds, or one stubborn draft will run for ever. Stopping is the
+  next level.
+
+links:
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: Both patterns, with the cases where each pays off.
+  - title: OpenAI agents guide
+    url: https://developers.openai.com/api/docs/guides/agents
+    kind: docs
+    note: Orchestration and handoffs in another SDK.
+  - title: AI Agents for Beginners
+    url: https://github.com/microsoft/ai-agents-for-beginners
+    kind: course
+    note: Lessons on planning and multi-agent patterns.
+
+wrong: [work, split, combine, judge, revise, accept]

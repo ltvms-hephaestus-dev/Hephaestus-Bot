@@ -1,0 +1,97 @@
+id: remembering-between-steps
+title: Remembering between steps
+concepts:
+  - working memory
+  - notes and state
+  - memory across sessions
+
+lesson: |
+  An agent's only working memory is its context window: the messages
+  accumulated in the loop. Two things follow.
+
+  **Within a run**, the window fills up. Forty tool results later, the early
+  ones are pushed out or summarised away, and the agent can lose track of what
+  it was doing.
+
+  **Between runs**, nothing survives at all. A new session starts with an empty
+  list. The weights are frozen, so the model has not "learned" your project by
+  working on it yesterday.
+
+  The answer is the one people use: **write things down**. Give the agent a
+  place to keep notes outside the window, such as a file or a small database,
+  and tools to read and update it. A to-do list it ticks off. Decisions made
+  and why. What was tried and failed.
+
+  At the start of each run, the notes are read back in. Now the agent resumes
+  instead of starting over, and the important facts no longer depend on staying
+  inside the window.
+
+goal: |
+  An agent is migrating 200 files. It manages about 30 per session before its
+  window is full. Each new session starts by redoing work. Click each fix, then
+  choose.
+
+scene:
+  type: messages
+  needs: [choice]
+  idle: Click a fix and I will show you the start of session two.
+  replyLabel: session two begins
+  replyRole: agent
+  cases:
+    - when: { choice: "^notes$" }
+      messages:
+        - { role: session one, content: "Migrates 30 files. After each one, updates progress.md: done, remaining, and one problem found with date formats." }
+        - { role: new session, content: "Empty window. First step: read progress.md." }
+      reply: 30 done, 170 to go. I will start at file 31, and I know about the date formats.
+    - when: { choice: "^learns$" }
+      messages:
+        - { role: session one, content: "Migrates 30 files." }
+        - { role: new session, content: "Empty window. Same frozen weights as yesterday." }
+      reply: Hello! Which files would you like me to migrate?
+    - when: { choice: "^replay$" }
+      messages:
+        - { role: session one, content: "Migrates 30 files. The full transcript is 180,000 tokens." }
+        - { role: new session, content: "Loads the entire transcript of session one." }
+      reply: The window is nearly full before any work starts. By session three it no longer fits.
+    - when: { choice: "^temperature$" }
+      messages:
+        - { role: new session, content: "Empty window. Temperature set to 0." }
+      reply: Hello! Which files would you like me to migrate? (And I will say exactly this every time.)
+
+challenge:
+  type: choice
+  options:
+    - { id: learns, text: "Nothing. The model will have learned the project from session one", why: "The weights are frozen. Working on a task changes nothing inside the model." }
+    - { id: replay, text: "Load the complete transcript of every earlier session", why: "That fills the window with old tool output and stops fitting after a few sessions." }
+    - { id: temperature, text: "Lower the temperature so it behaves consistently", why: "Temperature changes how tokens are picked. It gives the model no memory." }
+    - { id: notes, text: "Have it keep a progress file and read it at the start of each session", correct: true }
+
+hints:
+  - What would you do yourself if you had to hand the job to a colleague every evening?
+  - Only one option carries the essential facts forward in a small space.
+  - Choose the progress file.
+
+success: |
+  A few hundred tokens of notes replaced 180,000 tokens of transcript, and they
+  hold exactly what matters. Notes also survive a crash, and a person can read
+  and correct them.
+
+  Deciding what deserves a place in the window, and what should live outside it
+  until needed, is the last skill of this world.
+
+links:
+  - title: Effective context engineering for AI agents
+    url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    kind: article
+    note: Has a section on structured note-taking for long tasks.
+  - title: "LLM Powered Autonomous Agents"
+    url: https://lilianweng.github.io/posts/2023-06-23-agent/
+    kind: article
+    note: Short-term and long-term memory in agent designs.
+  - title: Claude Code overview
+    url: https://code.claude.com/docs/en/overview
+    kind: docs
+    note: A coding agent that keeps project notes in a file it reads each session.
+
+solution: [notes]
+wrong: [replay]

@@ -1,0 +1,77 @@
+id: retrieve-then-generate
+title: Retrieve, then generate
+concepts:
+  - RAG
+  - chunking
+  - citations
+
+lesson: |
+  Put the last two levels together and you have the most widely used pattern in
+  AI applications: **retrieval-augmented generation**, or RAG. Find the relevant
+  passages, paste them into the prompt, and let the model write the answer from
+  them.
+
+  It has two phases.
+
+  **Indexing**, done once and again whenever documents change. Documents are cut
+  into passages called **chunks**, because a whole manual is too long to embed
+  usefully and too expensive to send. Each chunk is embedded and stored.
+
+  **Answering**, done for every question. The question is embedded, the closest
+  chunks are fetched, and they go into the prompt next to the question, clearly
+  marked as reference material. The model is told to answer only from them and
+  to say which chunk it used. Those **citations** let a person check the answer.
+
+  RAG does not make a model smarter. It makes it informed, and checkable.
+
+goal: |
+  Put the pipeline in order: first what happens once, ahead of time, then what
+  happens for every question.
+
+scene:
+  type: messages
+  request: { model: forge-1, max_tokens: "200" }
+  system: Answer only from the passages in <context>. Name the source you used. If the answer is not there, say so.
+  messages:
+    - { role: user, content: "<context>\n[refund-policy.md] Refunds are issued to the original payment method within 14 days.\n[returns.md] To return an item, print the prepaid label…\n</context>\n\nHow do I get my money back?" }
+  reply: "Return the item with the prepaid label; your refund then goes back to your original payment method within 14 days. (Sources: returns.md, refund-policy.md)"
+  note: This is the finished prompt. Everything in <context> was put there by your code, not by the user.
+
+challenge:
+  type: order
+  items:
+    - { id: chunk, text: Split your documents into chunks }
+    - { id: index, text: Embed every chunk and save it in the vector store }
+    - { id: embed, text: "A question arrives: embed the question" }
+    - { id: search, text: Fetch the chunks closest to the question }
+    - { id: prompt, text: "Build the prompt: instructions, the chunks, then the question" }
+    - { id: answer, text: "The model answers from the chunks and cites them" }
+
+hints:
+  - The first two steps happen before any user shows up.
+  - You cannot search until the question is embedded, and you cannot build the prompt until you have the chunks.
+  - "Chunk, index, embed the question, search, build the prompt, answer."
+
+success: |
+  Compare the board with the first level of this world. Same model, same
+  question, and now the answer says 14 days and names its source.
+
+  Most RAG problems are retrieval problems. If the right chunk is not fetched,
+  no prompt can save the answer, so when quality is poor, look at what was
+  retrieved before you touch the wording.
+
+links:
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: Where retrieval sits among the building blocks.
+  - title: Hugging Face LLM Course
+    url: https://huggingface.co/learn/llm-course
+    kind: course
+    note: Includes building a semantic search index end to end.
+  - title: Embeddings with the Gemini API
+    url: https://ai.google.dev/gemini-api/docs/embeddings
+    kind: docs
+    note: The indexing half, in code.
+
+wrong: [embed, chunk, index, search, prompt, answer]

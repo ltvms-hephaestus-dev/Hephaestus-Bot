@@ -1,0 +1,79 @@
+id: what-goes-in-the-window
+title: What goes in the window
+concepts:
+  - context engineering
+  - compaction
+  - just-in-time retrieval
+
+lesson: |
+  Prompt engineering asks: what should I say to the model? With agents a bigger
+  question takes over: **what should be in the context window at each step?**
+  That is **context engineering**.
+
+  The window is a budget. Everything in it costs money on every turn, and
+  quality drops as it fills with material that does not matter: the model's
+  attention is spread over all of it. More context is not better context.
+
+  The working habits:
+
+  - **Keep the system prompt and tool list lean.** Every tool definition is
+    sent on every turn.
+  - **Fetch just in time.** Give the agent tools to look things up when needed
+    rather than loading everything up front. A file path is cheaper than a file.
+  - **Compact.** When the window fills, replace old turns with a summary of
+    what was learned and decided.
+  - **Trim tool results.** Return the ten matching lines, not the whole log.
+  - **Keep notes outside**, as in the last level.
+
+  The aim is the smallest set of high-value tokens that lets the model do the
+  next step well.
+
+goal: |
+  An agent is asked to fix one failing test in the `auth` module of a large
+  repository. Which of these belong in its window? Tick every one.
+
+scene:
+  type: robot
+  say: My window holds 200,000 tokens. The repository is two million. Choose well.
+  note: "Budget so far: system prompt and tools 4,000 tokens. The task itself: 60 tokens."
+
+challenge:
+  type: choice
+  multiple: true
+  options:
+    - { id: failure, text: The output of the failing test, correct: true }
+    - { id: files, text: The two source files the test exercises, correct: true }
+    - { id: notes, text: The project's short notes on conventions and how to run tests, correct: true }
+    - { id: repo, text: Every file in the repository, why: "It does not fit, and almost none of it is relevant. Give the agent a search tool instead." }
+    - { id: history, text: "The raw output of 30 tool calls from an unrelated task earlier today", why: "Stale output crowds out what matters. Compact it into a line or drop it." }
+
+hints:
+  - Ask of each item whether the next step is worse without it.
+  - Two of the five are large and mostly irrelevant.
+  - Tick the test output, the two source files and the conventions notes.
+
+success: |
+  You kept perhaps 6,000 tokens out of two million, and the agent is better off
+  for it. Anything else it needs, it can fetch with a tool at the moment it
+  needs it.
+
+  The robot is now autonomous: it loops, it stops, it remembers, and it keeps
+  its window clean. Whether you can trust it with real users and real systems
+  is a different question, and it is World 6.
+
+links:
+  - title: Effective context engineering for AI agents
+    url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    kind: article
+    note: The source for this level. Read it in full.
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: On keeping tool sets small and well described.
+  - title: Prompt caching
+    url: https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+    kind: docs
+    note: Makes the stable start of a long context much cheaper to resend.
+
+solution: [failure, files, notes]
+wrong: [failure, files, notes, repo]

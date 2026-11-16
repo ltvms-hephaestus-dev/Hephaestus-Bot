@@ -1,0 +1,123 @@
+id: fix-a-broken-run
+title: Fix a broken run
+concepts:
+  - debugging an agent
+  - reading the trace
+  - definition and code must agree
+
+lesson: |
+  Last night an agent was asked to close a ticket. It tried the same tool call
+  six times, used up its turn budget and stopped. The user got nothing.
+
+  The reflex is to blame the model or rewrite the prompt. Resist it, and debug
+  the way you would debug any system: read the evidence.
+
+  1. **Open the trace.** What did the model actually send? What exactly came
+     back?
+  2. **Read the tool result as the model saw it.** Is the error message one a
+     newcomer could act on?
+  3. **Compare the tool definition with the real function.** The model only
+     knows the definition. If the two disagree, the model is doing what it was
+     told, and the telling is wrong.
+  4. **Fix the cause, then add a case to your evals** so it cannot come back.
+
+  Notice what already worked. The turn budget stopped the loop, and the trace
+  recorded everything. Without those two, this would be a mystery and a bill.
+
+goal: |
+  The trace is on the board, and the tool definition and the real function are
+  below. The definition was written with the name `state`. Type the property
+  name that makes them agree.
+
+scene:
+  type: messages
+  replyLabel: how the run ended
+  replyRole: harness
+  messages:
+    - { role: user, content: "Close ticket #482." }
+    - { role: assistant, content: "tool call  update_ticket { \"id\": 482, \"state\": \"closed\" }" }
+    - { role: tool result, content: "TypeError: update_ticket() got an unexpected keyword argument 'state'", meta: "is_error: true" }
+    - { role: assistant, content: "tool call  update_ticket { \"id\": 482, \"state\": \"closed\" }", meta: "the same call, five more times" }
+  reply: "Stopped. Turn budget used up after 6 turns. Ticket #482 is still open."
+  cases:
+    - when: { param: "^status$" }
+      messages:
+        - { role: user, content: "Close ticket #482." }
+        - { role: assistant, content: "tool call  update_ticket { \"id\": 482, \"status\": \"closed\" }" }
+        - { role: tool result, content: "Ticket #482 is now closed.", meta: "is_error: false" }
+      replyLabel: the model answers
+      replyRole: assistant
+      reply: "Done. Ticket #482 is closed."
+    - when: { param: ".+" }
+      messages:
+        - { role: user, content: "Close ticket #482." }
+        - { role: assistant, content: "tool call  update_ticket { \"id\": 482, \"{{param}}\": \"closed\" }" }
+        - { role: tool result, content: "TypeError: update_ticket() got an unexpected keyword argument '{{param}}'", meta: "is_error: true" }
+        - { role: assistant, content: "tool call  update_ticket { \"id\": 482, \"{{param}}\": \"closed\" }", meta: "the same call, five more times" }
+
+challenge:
+  type: fill
+  code:
+    python: |
+      update_ticket_tool = {
+          "name": "update_ticket",
+          "description": "Open or close a support ticket.",
+          "input_schema": {"properties": {
+              "id": {"type": "number"},
+              "{{param}}": {"enum": ["open", "closed"]},
+          }},
+      }
+
+      def update_ticket(id, status):  # the real function
+          return db.set_status(id, status)
+    typescript: |
+      const updateTicketTool = {
+        name: "update_ticket",
+        description: "Open or close a support ticket.",
+        input_schema: { properties: {
+          id: { type: "number" },
+          "{{param}}": { enum: ["open", "closed"] },
+        } },
+      };
+
+      // the real function
+      function updateTicket({ id, status }) {
+        return db.setStatus(id, status);
+      }
+  blanks:
+    param:
+      placeholder: name
+      width: 8
+      accept: { equals: status }
+      feedback: The board shows the function still rejecting that name. Read the real function's parameters.
+
+hints:
+  - The model sent exactly what the definition told it to send. So the definition is where to look.
+  - Compare the property name in the definition with the parameter names of the real function.
+  - "The function takes `status`. Use that name."
+
+success: |
+  One word. The model was never confused: it was given a definition that did
+  not match the code, and it followed it faithfully six times.
+
+  Two smaller lessons are in the same trace. A better error, "unknown argument
+  'state', expected 'status'", would have let the model fix itself on the
+  second turn. And generating the schema from the function, as an MCP SDK does,
+  would have made the mismatch impossible.
+
+links:
+  - title: Effective context engineering for AI agents
+    url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    kind: article
+    note: On tools whose inputs and outputs are unambiguous.
+  - title: Your AI product needs evals
+    url: https://hamel.dev/blog/posts/evals/
+    kind: article
+    note: Turning a failure like this one into a permanent test.
+  - title: Tool use with Claude
+    url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+    kind: docs
+    note: Tool definitions and error results in a real API.
+
+solution: { param: status }
+wrong: { param: state }

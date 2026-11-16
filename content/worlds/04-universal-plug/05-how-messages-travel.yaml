@@ -1,0 +1,109 @@
+id: how-messages-travel
+title: How messages travel
+concepts:
+  - stdio
+  - Streamable HTTP
+  - stateless requests
+  - protocol version
+
+lesson: |
+  JSON-RPC says what a message looks like, not how it gets there. MCP defines
+  two **transports**.
+
+  **stdio** is for servers on your own machine. The host starts the server as a
+  child process and they write messages to each other's standard input and
+  output. Nothing touches the network.
+
+  **Streamable HTTP** is for remote servers. The client sends each message as
+  an HTTP POST to one address.
+
+  Since revision {{fact.mcp_spec}}, the protocol is **stateless**. Earlier
+  revisions began with an `initialize` handshake and then tied every request to
+  a session through an `Mcp-Session-Id` header. Both were removed. Each request
+  now carries what the server needs to handle it alone:
+
+  - `MCP-Protocol-Version`: the revision the client speaks;
+  - `Mcp-Method` and `Mcp-Name`: what is being asked, so gateways can route
+    without opening the body.
+
+  That is what lets a busy server run behind an ordinary load balancer. Many
+  tutorials still show the handshake. They describe an older protocol.
+
+goal: |
+  Complete the headers of a `tools/call` request sent over Streamable HTTP. The
+  server on the board speaks the current revision only.
+
+scene:
+  type: messages
+  needs: [version]
+  replyLabel: the server answers
+  replyRole: server
+  request: { POST: /mcp, "MCP-Protocol-Version": "{{version}}", "Mcp-Method": tools/call, "Mcp-Name": search_tickets }
+  messages:
+    - { role: client, content: "{ \"jsonrpc\": \"2.0\", \"id\": 2, \"method\": \"tools/call\", … }", meta: "no handshake first, no session id" }
+  errorLabel: 400 error
+  error: 'Unsupported protocol version "{{version}}". This server speaks 2026-07-28.'
+  cases:
+    - when: { version: "^2026-07-28$" }
+      error: ""
+      reply: "{ \"jsonrpc\": \"2.0\", \"id\": 2, \"result\": { \"content\": [ … ], \"isError\": false } }"
+      note: Any copy of the server could have answered this. Nothing about you was stored between requests.
+
+challenge:
+  type: fill
+  code:
+    python: |
+      headers = {
+          "MCP-Protocol-Version": "{{version}}",
+          "Mcp-Method": "tools/call",
+          "Mcp-Name": "search_tickets",
+      }
+      reply = http.post(
+          server_url, headers=headers, json=request,
+      )
+    typescript: |
+      const headers = {
+        "MCP-Protocol-Version": "{{version}}",
+        "Mcp-Method": "tools/call",
+        "Mcp-Name": "search_tickets",
+      };
+      const body = JSON.stringify(request);
+      const reply = await fetch(serverUrl, {
+        method: "POST", headers, body,
+      });
+  blanks:
+    version:
+      placeholder: YYYY-MM-DD
+      width: 11
+      accept: { equals: "2026-07-28" }
+      feedback: Revisions are named by date. The lesson names the current one.
+
+hints:
+  - MCP revisions are identified by a date, not by a number like 2.0.
+  - The lesson says which revision made the protocol stateless.
+  - "The value is `2026-07-28`."
+
+success: |
+  One self-contained request, one response. No handshake came first and no
+  session id was sent.
+
+  In daily work an SDK writes these headers for you. Knowing they exist helps
+  in two situations: when you put a server behind a proxy or gateway, and when
+  an old tutorial's code fails against a current server.
+
+links:
+  - title: The 2026-07-28 specification release
+    url: https://blog.modelcontextprotocol.io/posts/2026-07-28/
+    kind: article
+    note: The maintainers explain the move to a stateless protocol.
+  - title: MCP base protocol
+    url: https://modelcontextprotocol.io/specification/2026-07-28/basic
+    kind: docs
+    note: Transports and message rules in full.
+  - title: MCP 2026 changes the rules
+    url: https://aaif.io/blog/mcp-2026-changes-the-rules
+    kind: article
+    note: A before-and-after walk through the same request.
+
+solution: { version: "2026-07-28" }
+wrong: { version: "2024-11-05" }

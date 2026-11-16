@@ -1,0 +1,106 @@
+id: knowing-when-to-stop
+title: Knowing when to stop
+concepts:
+  - stop conditions
+  - turn budget
+  - runaway loops
+
+lesson: |
+  The loop from the first level ends when the model stops asking for tools.
+  That is the happy path. A loop that depends only on the model deciding it is
+  finished will, sooner or later, not finish.
+
+  An agent can get stuck calling the same failing tool. It can wander off into
+  work nobody asked for. Each turn costs money and time, and a turn late at
+  night costs them with nobody watching.
+
+  So every real agent loop has **stop conditions that your code enforces**:
+
+  - a **turn budget**: at most this many model calls;
+  - a **token or cost budget** for the whole run;
+  - a **time limit**;
+  - sometimes a check for **no progress**, such as the same call repeated three
+    times.
+
+  Hitting a limit is not a crash. Stop cleanly, keep what was done, and tell
+  the user where it got to.
+
+  Set the budget from evidence. Look at how many turns successful runs take and
+  leave some room above that.
+
+goal: |
+  This task needs four model turns. Give the loop a turn budget that lets it
+  finish. Policy caps any run at 10 turns. Try `2` first and watch.
+
+scene:
+  type: loop
+  task: "Task: find out why the nightly build failed and open a ticket."
+  bind: { budget: n }
+  steps:
+    - { who: model, text: "Asks for get_build_log(build: nightly)" }
+    - { who: tool, text: "Tests failed in auth_test: connection refused on port 5432." }
+    - { who: model, text: "Asks for get_service_status(service: database)" }
+    - { who: tool, text: "The test database has been down since 02:10." }
+    - { who: model, text: "Asks for create_ticket(title: Test database down, breaks nightly build)" }
+    - { who: tool, text: "Ticket #482 created." }
+    - { who: model, text: "Final answer: the build failed because the test database is down. Ticket #482." }
+
+challenge:
+  type: fill
+  code:
+    python: |
+      MAX_TURNS = {{n}}
+
+      for turn in range(MAX_TURNS):
+          reply = call_model(messages, tools)
+          if reply.stop_reason != "tool_use":
+              break
+          messages += [reply, run_tools(reply)]
+      else:
+          report("Stopped: turn budget used up")
+    typescript: |
+      const MAX_TURNS = {{n}};
+
+      let done = false;
+      for (let turn = 0; turn < MAX_TURNS && !done; turn++) {
+        const reply = await callModel(messages, tools);
+        done = reply.stop_reason !== "tool_use";
+        if (!done) messages.push(reply, await runTools(reply));
+      }
+      if (!done) report("Stopped: turn budget used up");
+  blanks:
+    n:
+      placeholder: turns
+      width: 5
+      accept: { number: { min: 4, max: 10 } }
+      feedback: Either the robot is cut off before its final answer, or the budget is above the policy limit of 10.
+
+hints:
+  - Count the model steps on the board. Tool steps do not use up the budget.
+  - Four model turns are needed, and ten is the most you are allowed.
+  - Any number from `4` to `10` works. A little room above 4 is sensible.
+
+success: |
+  With a budget of 2 the robot found the cause and never got to open the
+  ticket: a limit that is too tight wastes the work already done. With no limit
+  at all, a stuck run would continue until someone noticed the bill.
+
+  A budget is the cheapest safety feature you will ever write, and it turns "the
+  agent ran away" into a line in a log.
+
+links:
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: Recommends stopping conditions such as a maximum number of iterations.
+  - title: OWASP Top 10 for LLM Applications
+    url: https://genai.owasp.org/llm-top-10/
+    kind: docs
+    note: Unbounded consumption is on the list for a reason.
+  - title: OpenAI agents guide
+    url: https://developers.openai.com/api/docs/guides/agents
+    kind: docs
+    note: How one SDK exposes turn limits.
+
+solution: { n: "6" }
+wrong: { n: "2" }

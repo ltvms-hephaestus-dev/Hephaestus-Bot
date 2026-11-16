@@ -1,0 +1,78 @@
+id: inside-a-coding-agent
+title: Inside a coding agent
+concepts:
+  - coding agent
+  - harness
+  - read, edit, run
+  - tests as feedback
+
+lesson: |
+  You have forged every part. Time to see them work together in the kind of AI
+  system developers use most: a **coding agent**.
+
+  Take it apart and nothing is new. It is the loop from World 5 with a handful
+  of tools from World 3:
+
+  - **search** and **read** files, to find the relevant code;
+  - **edit** a file;
+  - **run** a command, such as the test suite.
+
+  The **harness** around the model supplies those tools, enforces permissions
+  (World 6), keeps the window tidy, and reads a project notes file at the start
+  (World 5). Extra tools arrive through MCP servers (World 4).
+
+  What makes coding such a good fit for agents is **feedback**. The agent does
+  not have to guess whether its change works. It runs the tests, reads the
+  failure, and tries again. Each tool result is ground truth from the real
+  environment.
+
+  That is the general lesson of this whole game. An agent is as good as the
+  feedback its tools give it.
+
+goal: |
+  A developer types: "The date parser rejects 29 February. Fix it." Put the
+  agent's steps in order.
+
+scene:
+  type: robot
+  say: Every part you gave me is about to be used. Tell me where to begin.
+  note: "Tools available: search_code, read_file, edit_file, run_tests. Notes file: run tests with 'make test'."
+
+challenge:
+  type: order
+  items:
+    - { id: search, text: "Search the code for the date parser and read the file" }
+    - { id: reproduce, text: Run the tests to see the failure for itself }
+    - { id: edit, text: Edit the leap-year check }
+    - { id: rerun, text: "Run the tests again: one still fails" }
+    - { id: fix, text: Read the failure message and correct the edit }
+    - { id: pass, text: "Run the tests: all pass. Summarise the change for the developer" }
+
+hints:
+  - It cannot edit code it has not found, and a careful agent sees the failure before changing anything.
+  - Every edit is followed by a test run. The second run is what tells it the first edit was not enough.
+  - "Search and read, run the tests, edit, run again, fix, run and summarise."
+
+success: |
+  Find, check, change, check, change, check. The agent's first edit was wrong,
+  and it did not matter, because the test run said so and the loop continued.
+
+  Read the steps again and name the world behind each: the search tool and its
+  description, the round trip, the loop, the stop condition, the permission to
+  edit and run. There is no magic left in it for you.
+
+links:
+  - title: Claude Code overview
+    url: https://code.claude.com/docs/en/overview
+    kind: docs
+    note: A real coding agent, with its tools and permission model documented.
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: Its appendix describes coding agents and why tests make them work.
+  - title: Hugging Face Agents Course
+    url: https://huggingface.co/learn/agents-course
+    kind: course
+    note: Build a small code-writing agent yourself.
+
+wrong: [edit, search, reproduce, rerun, fix, pass]

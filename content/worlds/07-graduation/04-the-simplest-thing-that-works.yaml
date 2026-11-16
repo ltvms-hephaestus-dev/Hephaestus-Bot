@@ -1,0 +1,96 @@
+id: the-simplest-thing-that-works
+title: The simplest thing that works
+concepts:
+  - choosing an architecture
+  - when not to use an agent
+  - complexity must earn its place
+
+lesson: |
+  You can now build all of it: a single call, retrieval, tools, a workflow, an
+  agent, subagents. The last skill is choosing, and the best engineers choose
+  the least they can.
+
+  Walk up this ladder and stop at the first rung that solves the problem:
+
+  1. **One model call** with a good prompt and structured output.
+  2. **Add retrieval** if it needs knowledge it does not have.
+  3. **Add tools** if it needs live data or must act.
+  4. **A workflow** if there are several known steps.
+  5. **An agent** if the steps cannot be known in advance.
+  6. **Several agents** if the work splits into independent parts too big for
+     one window.
+
+  Each rung costs more, runs slower, and is harder to test and to explain. Each
+  is worth it only when your evals show the rung below falling short.
+
+  This is not caution for its own sake. Simple systems are the ones that get
+  finished, trusted and maintained.
+
+goal: |
+  The brief: "Read the text of each supplier invoice and give us the invoice
+  number, date and total as JSON." Click each design, then choose what you
+  would build first.
+
+scene:
+  type: messages
+  needs: [choice]
+  idle: Click a design and I will tell you what it takes to run.
+  replyLabel: in production
+  replyRole: result
+  cases:
+    - when: { choice: "^single$" }
+      messages:
+        - { role: design, content: "One model call per invoice. A clear prompt, one example, and a JSON Schema with three required fields." }
+      reply: 1 call per invoice, a second or two each. An eval of 100 labelled invoices tells you exactly how accurate it is.
+    - when: { choice: "^agent$" }
+      messages:
+        - { role: design, content: "An agent with read_pdf, search and calculator tools, told to extract the fields." }
+      reply: 6 to 9 calls per invoice. Usually right. Sometimes it goes looking up the supplier online for no reason.
+    - when: { choice: "^multi$" }
+      messages:
+        - { role: design, content: "An orchestrator with a reader agent, a validator agent and a formatter agent." }
+      reply: 15 or more calls per invoice, four prompts to maintain, and a failure could be in any of them.
+    - when: { choice: "^rag$" }
+      messages:
+        - { role: design, content: "Embed every invoice into a vector store, then retrieve the relevant passages for each question." }
+      reply: The whole invoice already fits in the window. Retrieval adds an index to maintain and can miss the total.
+
+challenge:
+  type: choice
+  options:
+    - { id: agent, text: "An agent with PDF, search and calculator tools", why: "The steps are known and there is one of them. An agent adds cost and unpredictability for nothing." }
+    - { id: multi, text: "A team of agents: reader, validator, formatter", why: "Three roles for a task one call can do. More parts, more ways to fail." }
+    - { id: rag, text: "A retrieval pipeline over all invoices", why: "Retrieval is for finding the right text among too much. Here the text is one short document." }
+    - { id: single, text: "One model call per invoice with structured output", correct: true }
+
+hints:
+  - Start at the bottom of the ladder and ask whether that rung is enough.
+  - The input is one short document and the output is three fields.
+  - Choose the single call with structured output.
+
+success: |
+  A World 2 solution to a problem that sounded like it needed World 6. If the
+  eval later shows totals going wrong on multi-page invoices, climb one rung,
+  for that reason, with the numbers to show for it.
+
+  **The robot is finished, and so are you.** You know what a model is doing
+  when it answers, how to call one, how to give it knowledge and tools, how MCP
+  connects it to everything, how an agent loops and stops, and how to run one
+  responsibly. Go and build the simplest thing that works.
+
+links:
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: The whole argument for this level, from people who have built many.
+  - title: Structured output with Gemini
+    url: https://ai.google.dev/gemini-api/docs/structured-output
+    kind: docs
+    note: Everything the winning design needs.
+  - title: Your AI product needs evals
+    url: https://hamel.dev/blog/posts/evals/
+    kind: article
+    note: How to know when the simple version has stopped being enough.
+
+solution: [single]
+wrong: [multi]

@@ -1,0 +1,96 @@
+id: the-model-asks-your-code-acts
+title: The model asks, your code acts
+concepts:
+  - tool calling
+  - function calling
+  - the model never runs code
+
+lesson: |
+  Retrieval covers documents. It cannot tell you whether it is raining, and it
+  cannot send an email. For that the robot needs hands.
+
+  A model can only produce text. So **tool calling**, also called function
+  calling, is an agreement about text:
+
+  1. With your request you send a list of **tools**: functions your program is
+     willing to run, each with a name and a description.
+  2. If the model decides a tool would help, it does not answer the user.
+     Instead it writes a small structured message: *call `get_weather` with
+     `city = "Lisbon"`*. The response's stop reason says so.
+  3. **Your code** reads that message and runs the real function.
+
+  The model never executes anything. It asks, and your program chooses whether
+  and how to act. That is what keeps you in control, and it is why a tool can
+  be anything you can write a function for.
+
+goal: |
+  The reply on the board is not an answer. Complete the check so your code
+  notices that the model is asking for a tool. Read the stop reason on the board.
+
+scene:
+  type: messages
+  request: { model: forge-1, tools: "get_weather" }
+  messages:
+    - { role: user, content: "Is it raining in Lisbon?" }
+  reply:
+    mono: true
+    stopReason: tool_use
+    content: "tool call\n  name:  get_weather\n  input: { \"city\": \"Lisbon\" }"
+  say: I cannot look outside. Would you run this for me?
+
+challenge:
+  type: fill
+  code:
+    python: |
+      reply = client.messages.create(
+          model="forge-1", max_tokens=200,
+          tools=[get_weather_tool], messages=messages,
+      )
+      if reply.stop_reason == "{{reason}}":
+          call = reply.content[0]
+          result = run_tool(call.name, call.input)
+    typescript: |
+      const reply = await client.messages.create({
+        model: "forge-1", max_tokens: 200,
+        tools: [getWeatherTool], messages,
+      });
+      if (reply.stop_reason === "{{reason}}") {
+        const call = reply.content[0];
+        const result = await runTool(call.name, call.input);
+      }
+  blanks:
+    reason:
+      placeholder: stop reason
+      width: 11
+      accept: { equals: tool_use }
+      feedback: That is not the stop reason shown under the reply on the board.
+
+hints:
+  - In World 2 you met two stop reasons. This reply shows a third.
+  - It is printed on the board, right under the tool call.
+  - "The stop reason is `tool_use`."
+
+success: |
+  Your program now recognises a request for help. Look at what the model
+  produced: a name and some JSON, nothing more. Every "AI that does things",
+  from booking a flight to editing code, rests on this exchange.
+
+  Two questions are still open. How did the model know `get_weather` exists and
+  what it needs? And what happens after your code has the result?
+
+links:
+  - title: Tool use with Claude
+    url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+    kind: docs
+    note: The same exchange against a real API.
+  - title: Function calling with Gemini
+    url: https://ai.google.dev/gemini-api/docs/function-calling
+    kind: docs
+    note: Another provider, the same idea under its other name.
+  - title: Hugging Face Agents Course
+    url: https://huggingface.co/learn/agents-course
+    kind: course
+    note: Unit 1 builds tool calling up from plain text.
+
+solution: { reason: tool_use }
+wrong: { reason: end_turn }

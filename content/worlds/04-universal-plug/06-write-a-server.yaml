@@ -1,0 +1,115 @@
+id: write-a-server
+title: Write a server
+concepts:
+  - MCP SDK
+  - tool handler
+  - schema from code
+
+lesson: |
+  You will rarely write JSON-RPC by hand. Official **SDKs** exist for Python,
+  TypeScript and several other languages, and with one a server is short.
+
+  The pattern is the same everywhere:
+
+  1. Create a server object and give it a name.
+  2. Register each capability by attaching a normal function to it. The SDK
+     builds the tool definition for you: the name from the function, the
+     description from its docstring or a string you pass, the input schema from
+     the parameter types.
+  3. Start it on a transport: stdio for a local server, HTTP for a remote one.
+
+  From then on the SDK answers `tools/list` with those definitions and routes
+  every `tools/call` to your function.
+
+  So the craft is in what you learned in World 3: a clear name, a description
+  that says when to use the tool, precise types, and helpful errors.
+
+  The code below is simplified from the official SDKs. Exact names differ a
+  little between languages and versions, so check the SDK you install.
+
+goal: |
+  Register `search_tickets` so that the **model** can call it. Try the other
+  two kinds from level 3 and see what the server would list instead.
+
+scene:
+  type: messages
+  needs: [kind]
+  replyLabel: what tools/list returns
+  replyRole: server
+  messages:
+    - { role: client, content: "{ \"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/list\" }" }
+  errorLabel: server crashed
+  error: 'The server object has nothing called "{{kind}}".'
+  cases:
+    - when: { kind: "^tool$" }
+      error: ""
+      reply:
+        mono: true
+        content: "tools: [ {\n  name: \"search_tickets\",\n  description: \"Find support tickets by status: open or closed.\",\n  inputSchema: { status: string, required } } ]"
+      note: Name, description and schema were all generated from your function.
+    - when: { kind: "^(resource|prompt)$" }
+      error: ""
+      reply:
+        mono: true
+        content: "tools: [ ]"
+      note: 'It is registered as a {{kind}}, so the tool list is empty and the model has nothing to call.'
+
+challenge:
+  type: fill
+  code:
+    python: |
+      server = Server("tickets")
+
+      @server.{{kind}}()
+      def search_tickets(status: str) -> list[dict]:
+          """Find support tickets by status: open or closed."""
+          return db.find(status=status)
+
+      server.run()  # stdio: for a local server
+    typescript: |
+      const server = new Server("tickets");
+
+      server.{{kind}}(
+        "search_tickets",
+        "Find support tickets by status: open or closed.",
+        { status: z.string() },
+        async ({ status }) => db.find({ status }),
+      );
+
+      server.run(); // stdio: for a local server
+  blanks:
+    kind:
+      placeholder: kind
+      width: 9
+      accept: { equals: tool }
+      feedback: The model has to be able to call it. Which of the three capabilities does the model control?
+
+hints:
+  - A server offers three kinds of thing. You met them two levels ago.
+  - Resources and prompts are not chosen by the model.
+  - "Register it as a `tool`."
+
+success: |
+  Eight lines, and any MCP host can now search your tickets. You wrote a
+  function, a sentence and a type. The SDK did the protocol.
+
+  This is why the server count grows so fast: wrapping an existing API is an
+  afternoon's work. It is also why the last level of this world matters. An
+  afternoon's work by a stranger is now something your assistant can run.
+
+links:
+  - title: MCP Python SDK
+    url: https://github.com/modelcontextprotocol/python-sdk
+    kind: code
+    note: The real decorator names and a quickstart server.
+  - title: MCP TypeScript SDK
+    url: https://github.com/modelcontextprotocol/typescript-sdk
+    kind: code
+    note: The same for TypeScript.
+  - title: MCP server features
+    url: https://modelcontextprotocol.io/specification/2026-07-28/server
+    kind: docs
+    note: What the SDK is producing on your behalf.
+
+solution: { kind: tool }
+wrong: { kind: resource }

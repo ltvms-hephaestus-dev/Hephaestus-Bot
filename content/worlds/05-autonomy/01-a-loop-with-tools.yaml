@@ -1,0 +1,102 @@
+id: a-loop-with-tools
+title: A loop with tools
+concepts:
+  - agent
+  - agent loop
+  - decide, act, observe
+
+lesson: |
+  In World 3 a tool call was a round trip: the model asked, your code ran the
+  tool, the model answered. One tool, then done.
+
+  But the model sees each result before it writes again. So it can look at the
+  result and decide to ask for *another* tool. If your code keeps going for as
+  long as the model keeps asking, the model can work through a task that takes
+  many steps, choosing each step from what it has just learned.
+
+  That is an **agent**: a model using tools in a loop until the job is done.
+  There is no more to the definition than that.
+
+  The loop has three beats:
+
+  1. **Decide.** The model reads everything so far and either asks for a tool
+     or gives a final answer.
+  2. **Act.** Your code runs the tool.
+  3. **Observe.** The result is added to the messages, and the loop repeats.
+
+  The program that runs this loop around the model is often called a
+  **harness**. It is ordinary code, and you are about to write its core.
+
+goal: |
+  Complete the loop condition so the robot keeps working for as long as it is
+  asking for tools. Use the stop reason you met in World 3.
+
+scene:
+  type: loop
+  task: "Task: find the cheapest train to Porto tomorrow and put it in my calendar."
+  bind: { gate: reason }
+  gate: "^tool_use$"
+  steps:
+    - { who: model, text: "Asks for search_trains(to: Porto, date: tomorrow)" }
+    - { who: tool, text: "Three trains. The cheapest leaves at 07:40 and costs €19." }
+    - { who: model, text: "Asks for add_event(title: Train to Porto, start: 07:40)" }
+    - { who: tool, text: "Event created." }
+    - { who: model, text: "Final answer: it is in your calendar, the 07:40 to Porto for €19." }
+
+challenge:
+  type: fill
+  code:
+    python: |
+      reply = call_model(messages, tools)
+
+      while reply.stop_reason == "{{reason}}":
+          results = run_tools(reply)
+          messages += [reply, results]
+          reply = call_model(messages, tools)
+
+      print(reply.text)
+    typescript: |
+      let reply = await callModel(messages, tools);
+
+      while (reply.stop_reason === "{{reason}}") {
+        const results = await runTools(reply);
+        messages.push(reply, results);
+        reply = await callModel(messages, tools);
+      }
+
+      console.log(reply.text);
+  blanks:
+    reason:
+      placeholder: stop reason
+      width: 11
+      accept: { equals: tool_use }
+      feedback: With that condition the loop body never runs. Look at the board.
+
+hints:
+  - The loop should continue while the model is asking for a tool, and end when it gives an answer.
+  - You checked for this same stop reason in World 3, level 4.
+  - "The stop reason is `tool_use`."
+
+success: |
+  Six lines, and that is an agent. Nobody told the robot to search first and
+  book second. It chose the second step after reading the result of the first.
+
+  Everything else in this world is about making that loop behave: when to use
+  it at all, how to stop it, and what to keep in its limited window.
+
+links:
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: The clearest short definition of an agent, and when to build one.
+  - title: Hugging Face Agents Course
+    url: https://huggingface.co/learn/agents-course
+    kind: course
+    note: Builds this loop from scratch, then with frameworks.
+  - title: "LLM Powered Autonomous Agents"
+    url: https://lilianweng.github.io/posts/2023-06-23-agent/
+    kind: article
+    note: The survey that named planning, memory and tools as the parts of an agent.
+
+solution: { reason: tool_use }
+wrong: { reason: end_turn }

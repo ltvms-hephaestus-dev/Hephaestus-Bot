@@ -1,0 +1,100 @@
+id: chain-route-fan-out
+title: Chain, route, fan out
+concepts:
+  - prompt chaining
+  - routing
+  - parallelization
+
+lesson: |
+  Workflows come in a few standard shapes. Three of them cover most needs.
+
+  **Chaining.** Split a task into steps that run one after another, each using
+  the output of the one before: outline, then draft, then proofread. Each call
+  has one simple job, and your code can check the result between steps.
+
+  **Routing.** First classify the input, then send it down the branch built for
+  that kind. Each branch has its own prompt, its own tools, perhaps its own
+  model. Easy questions can go to a small cheap model and hard ones to a large
+  one.
+
+  **Parallelization.** Run several calls at once and combine the results. Either
+  split the work into independent parts, or run the same task several times and
+  compare the answers.
+
+  These combine freely: a route can lead to a chain, and a chain step can fan
+  out. What they share is that *your code* owns the control flow. The model
+  never decides what happens next.
+
+goal: |
+  A support inbox receives refund requests, bug reports and sales questions.
+  Each kind needs different instructions and different tools. Click each shape,
+  then choose the one that fits.
+
+scene:
+  type: messages
+  needs: [choice]
+  idle: Click a shape and I will run an email through it.
+  replyLabel: outcome
+  replyRole: result
+  cases:
+    - when: { choice: "^route$" }
+      messages:
+        - { role: email, content: "The app crashes when I upload a photo." }
+        - { role: classify, content: "One small model call: this is a bug report." }
+        - { role: bug branch, content: "Bug prompt, with the issue-tracker tool. Refund and sales branches stay idle." }
+      reply: A ticket is filed with the right template. Each branch can be improved without touching the others.
+    - when: { choice: "^chain$" }
+      messages:
+        - { role: email, content: "The app crashes when I upload a photo." }
+        - { role: step 1, content: "Refund handling. Nothing to refund." }
+        - { role: step 2, content: "Bug handling. Files a ticket." }
+        - { role: step 3, content: "Sales handling. Tries to sell an upgrade to an annoyed customer." }
+      reply: Every email passes through every step, including the two that do not apply.
+    - when: { choice: "^parallel$" }
+      messages:
+        - { role: email, content: "The app crashes when I upload a photo." }
+        - { role: all at once, content: "Refund, bug and sales handlers all run on the same email." }
+      reply: Three answers come back, two of them irrelevant, and you pay for all three every time.
+    - when: { choice: "^single$" }
+      messages:
+        - { role: email, content: "The app crashes when I upload a photo." }
+        - { role: one prompt, content: "A single prompt with every instruction and every tool for all three kinds." }
+      reply: It works on easy emails. As the prompt grows, the instructions for one kind start leaking into the others.
+
+challenge:
+  type: choice
+  options:
+    - { id: chain, text: "Chaining: refund step, then bug step, then sales step", why: "A chain is for steps that build on each other. These are alternatives, not stages." }
+    - { id: parallel, text: "Parallelization: run all three handlers on every email", why: "Only one handler applies to each email. Running all three wastes two calls." }
+    - { id: single, text: "One prompt containing all the instructions and tools", why: "Fine at first, but separate concerns in one prompt interfere as it grows." }
+    - { id: route, text: "Routing: classify the email, then use the branch for that kind", correct: true }
+
+hints:
+  - The three kinds of email are alternatives. Each email is exactly one of them.
+  - Which shape begins by deciding what kind of input it has?
+  - Choose routing.
+
+success: |
+  Distinct kinds of input that need distinct handling is the signature of
+  routing. If each email instead had to be summarised, then answered, then
+  translated, that would be a chain. If one long contract had to be reviewed
+  for ten separate issues, that would fan out.
+
+  Name the shape before you write the prompts. It tells you how many prompts
+  there are.
+
+links:
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: Each pattern with a diagram and advice on when to use it.
+  - title: AI Agents for Beginners
+    url: https://github.com/microsoft/ai-agents-for-beginners
+    kind: course
+    note: Worked examples of the same patterns.
+  - title: Hugging Face Agents Course
+    url: https://huggingface.co/learn/agents-course
+    kind: course
+
+solution: [route]
+wrong: [chain]
