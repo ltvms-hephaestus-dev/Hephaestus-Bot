@@ -144,12 +144,7 @@ kbd {
   align-items: center;
   gap: 0.55rem;
 }
-.brand__mark {
-  width: 1.5rem;
-  height: 1.5rem;
-  background: var(--ember);
-  clip-path: polygon(0 0, 100% 0, 100% 38%, 70% 38%, 70% 100%, 30% 100%, 30% 38%, 0 38%);
-}
+.brand__logo { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: block; }
 .site-nav {
   display: flex;
   flex-wrap: wrap;
