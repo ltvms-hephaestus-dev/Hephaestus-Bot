@@ -444,7 +444,10 @@ export interface MessagesView {
   pending: boolean;
   request: [string, string][];
   system?: string;
-  messages: { role: string; content: string }[];
+  messages: { role: string; content: string; meta?: string }[];
+  replyLabel: string;
+  replyRole: string;
+  errorLabel: string;
   reply?: { content: string; tokens?: string[]; stopReason: string; cut: boolean; mono: boolean };
   error?: string;
   note?: string;
@@ -472,7 +475,8 @@ export function resolveMessages(config: Record<string, any>, values: Record<stri
   const cfg = { ...config, ...(match ?? {}) };
 
   let pending = (config.needs ?? []).some((n: string) => !vals[n]);
-  let error: string | undefined = cfg.error ? fillIn(cfg.error, vals) : undefined;
+  // Nothing is judged until the player has filled in what the board needs.
+  let error: string | undefined = !pending && cfg.error ? fillIn(cfg.error, vals) : undefined;
   let reply: MessagesView['reply'];
 
   if (!pending && !error && cfg.reply !== undefined) {
@@ -494,7 +498,7 @@ export function resolveMessages(config: Record<string, any>, values: Record<stri
         content: tokens ? tokens.join('') : fillIn(r.content, vals),
         tokens,
         cut,
-        stopReason: cut ? 'max_tokens' : 'end_turn',
+        stopReason: cut ? 'max_tokens' : r.stopReason ?? 'end_turn',
         mono: !!r.mono,
       };
     }
@@ -505,7 +509,10 @@ export function resolveMessages(config: Record<string, any>, values: Record<stri
     pending,
     request: Object.entries(cfg.request ?? {}).map(([k, v]) => [k, fillIn(v, vals)]),
     system: cfg.system ? fillIn(cfg.system, vals) : undefined,
-    messages: (cfg.messages ?? []).map((m: any) => ({ role: fillIn(m.role, vals), content: fillIn(m.content, vals) })),
+    messages: (cfg.messages ?? []).map((m: any) => ({ role: fillIn(m.role, vals), content: fillIn(m.content, vals), meta: m.meta ? fillIn(m.meta, vals) : undefined })),
+    replyLabel: cfg.replyLabel ?? 'the model answers',
+    replyRole: cfg.replyRole ?? 'assistant',
+    errorLabel: cfg.errorLabel ?? '400 error',
     reply,
     error,
     note: cfg.note ? fillIn(cfg.note, vals) : undefined,
@@ -602,29 +609,32 @@ function MessagesScene(props: SceneProps) {
           </li>
         )}
         {view.messages.map((m, i) => (
-          <li class={`msg msg--${m.role === 'assistant' ? 'assistant' : m.role === 'user' ? 'user' : 'unknown'}`} key={i}>
+          <li class={`msg msg--${m.role === '?' ? 'unknown' : m.role === 'user' ? 'user' : 'other'}`} key={i}>
             <span class="msg__role">{m.role}</span>
             <span class="msg__text">{m.content}</span>
+            {m.meta && <span class="msg__meta">{m.meta}</span>}
           </li>
         ))}
       </ol>
       <p class="msgs__arrow" aria-hidden="true">
-        ↓ the model answers
+        ↓ {view.replyLabel}
       </p>
       {view.error ? (
         <p class="msg msg--error" role="status">
-          <span class="msg__role">400 error</span>
+          <span class="msg__role">{view.errorLabel}</span>
           <span class="msg__text">{view.error}</span>
         </p>
       ) : view.reply ? (
         <div class={`msg msg--assistant msg--reply${view.reply.cut ? ' msg--cut' : ''}`}>
-          <span class="msg__role">assistant</span>
+          <span class="msg__role">{view.replyRole}</span>
           {view.reply.mono ? <pre class="msg__text msg__mono">{replyText}</pre> : <span class="msg__text">{waiting ? '…' : replyText || '…'}</span>}
+          {(timing || view.replyRole === 'assistant') && (
           <span class="msg__meta">
             {timing
               ? `First words after ${timing.first} s. Finished after ${timing.total} s.`
               : `stop_reason: ${view.reply.stopReason}${view.reply.tokens ? `, output tokens: ${view.reply.tokens.length}` : ''}`}
           </span>
+          )}
         </div>
       ) : (
         <p class="msg msg--pending">Nothing sent yet.</p>
@@ -664,6 +674,143 @@ function MessagesScene(props: SceneProps) {
   );
 }
 
+/* -------------------------------------------------------------- retrieval */
+
+interface Chunk {
+  text: string;
+  score: number;
+  source?: string;
+}
+
+/** Pure: the k passages most similar to the question, best first. */
+export function topK<T extends { score: number }>(chunks: T[], k: number): T[] {
+  if (!Number.isInteger(k) || k < 1) return [];
+  return [...chunks].sort((a, b) => b.score - a.score).slice(0, k);
+}
+
+function RetrievalScene(props: SceneProps) {
+  const { config, say } = props;
+  const chunks: Chunk[] = config.chunks ?? [];
+  const raw = bound(props, 'k') ?? String(config.k ?? '');
+  const k = /^\d+$/.test(raw) ? Number(raw) : NaN;
+  const ranked = [...chunks].sort((a, b) => b.score - a.score);
+  const picked = Number.isNaN(k) ? [] : topK(chunks, k);
+
+  useEffect(() => {
+    if (Number.isNaN(k)) say('Tell me how many passages to fetch.');
+    else if (k < 1) say('Zero passages. I will have to guess.');
+    else say(`I will read the ${picked.length} closest passage${picked.length === 1 ? '' : 's'} before I answer.`);
+  }, [raw]);
+
+  return (
+    <div class="scene scene-rag">
+      <p class="scene-caption">The question</p>
+      <p class="rag__query">{config.query}</p>
+      <p class="scene-caption">Every stored passage, ranked by how close its meaning is</p>
+      <ol class="rag">
+        {ranked.map((c) => {
+          const inside = picked.includes(c);
+          return (
+            <li class={`rag__chunk${inside ? ' rag__chunk--in' : ''}`} key={c.text}>
+              <span class="rag__score">{c.score.toFixed(2)}</span>
+              <span class="rag__text">
+                {c.text}
+                {c.source && <small> ({c.source})</small>}
+              </span>
+              <span class="rag__state">{inside ? '✓ sent to the model' : 'left out'}</span>
+            </li>
+          );
+        })}
+      </ol>
+      {config.note && <p class="scene-note">{config.note}</p>}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------- loop */
+
+interface Step {
+  who: string;
+  text: string;
+}
+
+/**
+ * Pure: how far an agent loop gets. `budget` is the most model turns allowed.
+ * `loops` false means the loop condition never holds, so only the first model
+ * turn happens.
+ */
+export function runLoop(steps: Step[], budget: number, loops = true): { ran: number; outcome: 'idle' | 'finished' | 'budget' | 'no-loop' } {
+  if (!Number.isFinite(budget) || budget < 1) return { ran: 0, outcome: 'idle' };
+  let turns = 0;
+  let ran = 0;
+  for (const step of steps) {
+    if (step.who === 'model') {
+      if (turns >= budget) return { ran, outcome: 'budget' };
+      if (!loops && turns >= 1) return { ran, outcome: 'no-loop' };
+      turns += 1;
+    } else if (!loops) {
+      return { ran, outcome: 'no-loop' };
+    }
+    ran += 1;
+  }
+  return { ran, outcome: 'finished' };
+}
+
+function LoopScene(props: SceneProps) {
+  const { config, say } = props;
+  const steps: Step[] = config.steps ?? [];
+  const budgetRaw = config.bind?.budget ? bound(props, 'budget') ?? '' : String(config.budget ?? 99);
+  const budget = /^\d+$/.test(budgetRaw) ? Number(budgetRaw) : NaN;
+  const gateRaw = config.bind?.gate ? bound(props, 'gate') ?? '' : null;
+  let loops = true;
+  if (gateRaw !== null) {
+    try {
+      loops = new RegExp(String(config.gate ?? '.+'), 'i').test(gateRaw);
+    } catch {
+      loops = false;
+    }
+  }
+  const waiting = (gateRaw !== null && gateRaw === '') || Number.isNaN(budget);
+  const { ran, outcome } = waiting ? { ran: 0, outcome: 'idle' as const } : runLoop(steps, budget, loops);
+  const status = {
+    idle: 'Not started.',
+    finished: 'Finished: the model gave its final answer.',
+    budget: `Stopped by the budget after ${budget} model turn${budget === 1 ? '' : 's'}, before the task was done.`,
+    'no-loop': 'Stopped after one turn: the loop never ran, so the tool was never called.',
+  }[outcome];
+
+  useEffect(() => {
+    say(
+      outcome === 'finished'
+        ? config.done ?? 'Done. I kept going until I had an answer.'
+        : outcome === 'budget'
+          ? 'I was cut off before I could finish.'
+          : outcome === 'no-loop'
+            ? 'I asked for a tool and nobody ran it.'
+            : config.idle ?? 'Complete the code and I will start working.',
+    );
+  }, [outcome]);
+
+  return (
+    <div class="scene scene-loop">
+      <p class="scene-caption">{config.task}</p>
+      <ol class="loop">
+        {steps.map((s, i) => (
+          <li class={`loop__step loop__step--${s.who === 'model' ? 'model' : 'tool'}${i < ran ? '' : ' loop__step--skipped'}`} key={i}>
+            <span class="loop__who">{s.who}</span>
+            <span class="loop__text">{s.text}</span>
+            {i >= ran && <span class="loop__state">never ran</span>}
+          </li>
+        ))}
+      </ol>
+      <p class={`loop__status loop__status--${outcome}`} role="status">
+        {status}
+      </p>
+      {config.note && <p class="scene-note">{config.note}</p>}
+    </div>
+  );
+}
+
 /* --------------------------------------------------------------- registry */
 
 export const SCENES: Record<string, (p: SceneProps) => JSX.Element | null> = {
@@ -674,6 +821,8 @@ export const SCENES: Record<string, (p: SceneProps) => JSX.Element | null> = {
   attention: AttentionScene,
   context: ContextScene,
   messages: MessagesScene,
+  retrieval: RetrievalScene,
+  loop: LoopScene,
 };
 
 export const SCENE_NAMES = Object.keys(SCENES);

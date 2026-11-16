@@ -44,11 +44,20 @@ yet match its own [build prompt](./kickoff/BUILD_PROMPT.md).
   in World 2 needed code of its own, and Worlds 3 and 4 can reuse the scene for tool
   calls and JSON-RPC.
 
+- **MCP lessons were checked against the 2026-07-28 release notes**: no `initialize`
+  handshake, no `Mcp-Session-Id`, and the `MCP-Protocol-Version`, `Mcp-Method` and
+  `Mcp-Name` headers on Streamable HTTP. The server code in "Write a server" is
+  simplified from the official SDKs and says so; SDK method names differ by language
+  and version.
+- **Three boards carry Worlds 2 to 7.** `messages` draws requests, traces and protocol
+  exchanges; `retrieval` ranks passages; `loop` runs an agent loop to its stopping
+  point. 31 levels were added with two new scenes.
+- **Many later levels are multiple choice with a clickable board.** Judgement calls
+  (workflow or agent, which defence, which architecture) are what those levels teach,
+  and each option shows its own outcome on the board before the player commits.
+
 ## Known gaps
 
-- **Worlds 3 to 7 are outlines.** Their lessons are listed under `planned:` in each
-  `world.yaml`. They still need new scenes: a retrieval view, an agent loop and a
-  run trace.
 - **Interface strings are still inside the components.** The build prompt asks for one
   dictionary. This is the first step for translations; see CONTRIBUTING.
 - **Some links were written from memory and not machine-checked** at creation time,
@@ -59,7 +68,8 @@ yet match its own [build prompt](./kickoff/BUILD_PROMPT.md).
   LLMs-from-scratch, PEFT, Pydantic AI, LlamaIndex, MCP SDK repositories, Microsoft
   AI Agents for Beginners, Simon Willison and Hamel Husain links; and, in World 2, the
   Gemini text-generation page, MDN server-sent events, the Anthropic prompt tutorial
-  repository, promptingguide.ai, json-schema.org, Zod and Pydantic.
+  repository, promptingguide.ai, json-schema.org, Zod and Pydantic; and, in Worlds 3 to 7, the
+  Gemini embeddings page and Lilian Weng's agents article.
 - **No end-to-end browser test is committed.** Every level was played wrong and then
   right in headless Chrome during development, but that script is not part of CI.
 - **Challenges are designed for a keyboard and a wide screen.** They work on a phone;

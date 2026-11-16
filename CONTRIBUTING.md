@@ -122,7 +122,9 @@ scene input to a blank by name.
 | `embeddings` | Words as points, with vector arithmetic | `points: { word: [x, y] }`, `expr: { start, minus }`, `bind: { plus }` |
 | `attention` | A sentence with attention arcs | `tokens`, `weights`, `focus` (index), `bind: { guess }`, `alt` |
 | `context` | A conversation and a context window | `messages: [{ role, text, tokens, key }]`, `bind: { window }`, `remembered`, `forgotten` |
-| `messages` | A request to a model and the reply or error that comes back | `request`, `system`, `messages: [{ role, content }]`, `reply` (text, or `{ tokens }`, or `{ content, mono }`), `error`, `note`, `say`, `needs`, `cases`, `bind: { maxTokens, stream, inPrice, outPrice }`, `stream: true`, `usage`, `prices` |
+| `messages` | A request and the reply or error that comes back. Roles are free text, so it also draws traces and protocol exchanges | `request`, `system`, `messages: [{ role, content, meta }]`, `replyLabel`, `replyRole`, `errorLabel`, `reply` (text, or `{ tokens }`, or `{ content, mono }`), `error`, `note`, `say`, `needs`, `cases`, `bind: { maxTokens, stream, inPrice, outPrice }`, `stream: true`, `usage`, `prices` |
+| `retrieval` | A question and stored passages ranked by similarity | `query`, `chunks: [{ text, score, source }]`, `bind: { k }`, `note` |
+| `loop` | An agent loop, step by step, and where it stops | `task`, `steps: [{ who: model or tool, text }]`, `bind: { gate, budget }`, `gate` (pattern the gate blank must match for the loop to run), `note` |
 
 The `messages` scene is driven by data. Any string in it may contain `{{blank}}` to
 show what the player typed. `needs` lists blanks that must be filled before anything

@@ -1,0 +1,88 @@
+id: one-request-end-to-end
+title: One request, end to end
+concepts:
+  - the whole stack
+  - prompt to tool call to MCP
+  - who does what
+
+lesson: |
+  Here is one request, traced through everything in this game. A developer
+  types into their coding agent: "Is there already a ticket for the date parser
+  bug?"
+
+  The **harness** builds a request: system prompt, project notes, the tool
+  definitions, including those listed by a connected MCP server, and the
+  message. All of it becomes **tokens** in the **context window**.
+
+  The **model** predicts, token by token, and what it writes is not an answer
+  but a **tool call**.
+
+  The harness checks its **permission rules**. Searching tickets only reads, so
+  it is allowed.
+
+  The tool belongs to an MCP server, so the host's **MCP client** sends a
+  `tools/call` request. The **server** queries the ticket system and returns a
+  result.
+
+  The harness adds the tool call and the result to the messages and calls the
+  model **again**. Now the answer is in the window, and the model writes it in
+  plain language.
+
+  Seven worlds, a second or two.
+
+goal: |
+  Put the journey in order, from the developer's question to the answer on
+  their screen.
+
+scene:
+  type: messages
+  request: { model: forge-1, tools: "read_file, edit_file, run_tests, search_tickets (MCP)" }
+  replyLabel: second model call
+  messages:
+    - { role: user, content: "Is there already a ticket for the date parser bug?" }
+    - { role: assistant, content: "tool call  search_tickets { \"query\": \"date parser\" }", meta: "World 3: the model asks" }
+    - { role: harness, content: "Permission rule: search_tickets is read-only. Allowed.", meta: "World 6" }
+    - { role: client, content: "tools/call  search_tickets", meta: "World 4: JSON-RPC to the server" }
+    - { role: tool result, content: "#482 Date parser rejects 29 February (open)", meta: "isError: false" }
+  reply: 'Yes. Ticket #482, "Date parser rejects 29 February", is open.'
+  say: I never touched the ticket system. I wrote some text, and you built everything that made it true.
+
+challenge:
+  type: order
+  items:
+    - { id: build, text: "The harness builds the request: instructions, tool definitions, the question" }
+    - { id: predict, text: "The model writes a tool call for search_tickets" }
+    - { id: permit, text: The harness checks its permission rules and allows the call }
+    - { id: mcp, text: "The MCP client sends tools/call, and the server queries the ticket system" }
+    - { id: append, text: The tool call and its result are added to the messages }
+    - { id: answer, text: The model is called again and writes the answer }
+
+hints:
+  - The model speaks twice, once to ask and once to answer. Everything else happens between.
+  - Permission is checked before anything leaves the host.
+  - "Build, tool call, permission, MCP round trip, append, answer."
+
+success: |
+  Every step on that board is something you have done by hand in an earlier
+  level. A request this ordinary runs through tokens, the context window, a
+  prompt, a tool definition, a permission check, a protocol and a loop.
+
+  When one of these systems fails, you now know the stations where it can have
+  gone wrong, and you can walk the trace from one to the next. That is the next
+  level.
+
+links:
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: Re-read it now. It will read differently from the first time.
+  - title: MCP architecture
+    url: https://modelcontextprotocol.io/specification/2026-07-28/architecture
+    kind: docs
+    note: The host, client and server part of this journey.
+  - title: Claude Code overview
+    url: https://code.claude.com/docs/en/overview
+    kind: docs
+    note: A real harness that does each of these steps.
+
+wrong: [build, permit, predict, mcp, append, answer]

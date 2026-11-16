@@ -1,0 +1,76 @@
+id: what-the-model-cannot-know
+title: What the model cannot know
+concepts:
+  - knowledge cutoff
+  - private data
+  - grounding
+
+lesson: |
+  The robot can talk. Ask it about your company's refund policy and it will
+  answer fluently, and probably wrongly.
+
+  Remember World 1: the weights were frozen at a cutoff date, and they were
+  trained on public text. So three kinds of fact are simply not in there:
+
+  - anything **after the cutoff**: today's weather, this week's prices;
+  - anything **private**: your documents, your database, a customer's order;
+  - anything **too specific or rare** to have been learned reliably.
+
+  The model does not know that it does not know. It predicts what an answer
+  would look like, which is how you get a confident "30 days" when the real
+  policy says 14.
+
+  The fix is not a smarter model. It is **grounding**: put the facts into the
+  context window at the moment of the question, and tell the model to answer
+  from them. The rest of this world is two ways of doing that: fetching
+  knowledge, and calling tools.
+
+goal: |
+  Which of these questions can a frozen model **not** answer reliably without
+  help? Tick every one.
+
+scene:
+  type: messages
+  request: { model: forge-1, max_tokens: "100" }
+  messages:
+    - { role: user, content: "How long do customers have to ask for a refund?" }
+  reply: Customers can request a refund within 30 days of purchase.
+  note: Our policy document says 14 days. The model never saw it, and answered anyway.
+
+challenge:
+  type: choice
+  multiple: true
+  options:
+    - { id: capital, text: What is the capital of France?, why: "This is stable, public and common in training text. The model knows it." }
+    - { id: weather, text: Is it raining in Lisbon right now?, correct: true }
+    - { id: policy, text: What does our internal refund policy say?, correct: true }
+    - { id: order, text: "Where is order #1234?", correct: true }
+    - { id: recursion, text: Explain recursion with an example, why: "General knowledge and reasoning are exactly what the weights are good at." }
+
+hints:
+  - Ask of each one whether the answer was public and already true before the model was trained.
+  - Live facts, private documents and individual records are never in the weights.
+  - Tick the weather, the refund policy and the order. Leave the capital and recursion.
+
+success: |
+  Three different gaps, one remedy: bring the fact to the model. A policy
+  document can be looked up and pasted into the prompt, which is retrieval. The
+  weather and the order need a live system to be asked, which is a tool call.
+  You will build both.
+
+links:
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: Calls a model with retrieval and tools the basic building block of everything else.
+  - title: Intro to Large Language Models
+    url: https://www.youtube.com/watch?v=zjkBMFhNj_g
+    kind: video
+    note: Why the weights are a lossy snapshot of the internet.
+  - title: Tool use with Claude
+    url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+    kind: docs
+    note: A preview of the second half of this world.
+
+solution: [weather, policy, order]
+wrong: [weather, policy]

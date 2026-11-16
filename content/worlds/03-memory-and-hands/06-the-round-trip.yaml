@@ -1,0 +1,81 @@
+id: the-round-trip
+title: The round trip
+concepts:
+  - tool call
+  - tool result
+  - second model turn
+
+lesson: |
+  Your code has run the function and holds the answer: `rain, 14 °C`. The user
+  has still seen nothing, and the model does not know the result either.
+
+  A tool call always takes **two requests** to the model.
+
+  **Request one.** You send the user's message and the tool definitions. The
+  model replies with a tool call instead of an answer.
+
+  **In between.** Your code runs the tool.
+
+  **Request two.** You send the whole conversation again, because the API is
+  stateless, with two messages added to the end: the model's tool call, exactly
+  as it wrote it, and a **tool result** message carrying what your function
+  returned. Each call has an id, and the result names the id it answers.
+
+  Now the model can see the question, its own request and the outcome, and it
+  writes the final answer in ordinary language.
+
+  From the user's point of view one question was asked and answered. Underneath,
+  two model calls and one function call happened.
+
+goal: |
+  Put the round trip in order, from the user's question to the answer they read.
+
+scene:
+  type: messages
+  request: { model: forge-1, tools: "get_weather" }
+  replyLabel: second request, the model answers
+  messages:
+    - { role: user, content: "Is it raining in Lisbon?" }
+    - { role: assistant, content: "tool call  get_weather { \"city\": \"Lisbon\" }", meta: "id: call_1" }
+    - { role: tool result, content: "{ \"condition\": \"rain\", \"temp_c\": 14 }", meta: "answers call_1" }
+  reply: Yes. It is raining in Lisbon right now, and it is 14 °C.
+  say: Now I have something real to tell you.
+
+challenge:
+  type: order
+  items:
+    - { id: ask, text: Send the user's question together with the tool definitions }
+    - { id: call, text: "The model replies with a tool call, not an answer" }
+    - { id: run, text: Your code runs the real function }
+    - { id: result, text: "Send everything again, plus the tool call and its result" }
+    - { id: final, text: The model writes the answer the user reads }
+
+hints:
+  - The model speaks twice. Your function runs once, between the two.
+  - The result has to travel back to the model before a final answer can exist.
+  - "Question and tools, tool call, run it, send the result, final answer."
+
+success: |
+  Read the board from top to bottom: that list is literally what the second
+  request contains. The model wrote the last line only because the three above
+  it were in its context window.
+
+  Because each result goes back to the model, it can react to it and ask for
+  another tool. Keep doing that until it stops asking, and you have built an
+  agent. That is World 5.
+
+links:
+  - title: Tool use with Claude
+    url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+    kind: docs
+    note: The two requests, with the exact message shapes.
+  - title: Function calling with Gemini
+    url: https://ai.google.dev/gemini-api/docs/function-calling
+    kind: docs
+    note: The same round trip with different field names.
+  - title: Hugging Face Agents Course
+    url: https://huggingface.co/learn/agents-course
+    kind: course
+    note: Calls the steps thought, action and observation.
+
+wrong: [ask, run, call, result, final]

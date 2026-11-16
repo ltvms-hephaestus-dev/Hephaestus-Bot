@@ -1,0 +1,98 @@
+id: paying-for-it
+title: Paying for it
+concepts:
+  - cost per run
+  - prompt caching
+  - model choice
+  - latency
+
+lesson: |
+  An agent multiplies everything you learned about cost in World 2. One user
+  request becomes ten or twenty model calls, and each call resends the system
+  prompt, every tool definition and the whole growing history.
+
+  When a run costs too much or takes too long, the levers are these, roughly in
+  the order to try them:
+
+  1. **Cache the stable prefix.** The system prompt and tool definitions are
+     identical on every turn. With prompt caching, repeats are billed at a
+     small fraction of the normal input price and are processed faster.
+  2. **Shrink what flows through.** Compact tool results, as in the last level.
+     Compact old history.
+  3. **Use the right model for each job.** A small, fast model can classify,
+     route and extract. Keep the large one for hard reasoning. Subagents and
+     workflow steps can each use a different model.
+  4. **Take fewer turns.** Better tool descriptions and clearer instructions
+     mean fewer wasted steps.
+  5. **Bound the output**, the slow and expensive side.
+
+  Measure first. The trace tells you which lever matters.
+
+goal: |
+  An agent costs $2.00 a run. Its trace shows twenty model calls, and in each
+  one, 80% of the input is the same 10,000 tokens of instructions and tool
+  definitions. Click each change, then choose the first one to make.
+
+scene:
+  type: messages
+  needs: [choice]
+  idle: Click a change and I will work out the new cost per run.
+  replyLabel: cost per run
+  replyRole: result
+  cases:
+    - when: { choice: "^cache$" }
+      messages:
+        - { role: change, content: "Mark the instructions and tool definitions as a cached prefix." }
+        - { role: effect, content: "19 of the 20 calls read those 10,000 tokens from the cache at a fraction of the input price." }
+      reply: About $0.70, and each call starts sooner. Nothing about the agent's behaviour changed.
+    - when: { choice: "^bigger$" }
+      messages:
+        - { role: change, content: "Switch every call to the largest model." }
+      reply: About $6.00. The same 20 calls, each one dearer and slower.
+    - when: { choice: "^maxtokens$" }
+      messages:
+        - { role: change, content: "Raise max_tokens from 1,000 to 8,000." }
+      reply: Still about $2.00. The replies were short already. A ceiling is not a cost.
+    - when: { choice: "^noevals$" }
+      messages:
+        - { role: change, content: "Stop running the eval suite to save on model calls." }
+      reply: Still $2.00 a run for users. And now nobody will notice when the next change breaks something.
+
+challenge:
+  type: choice
+  options:
+    - { id: bigger, text: "Move to a larger, smarter model so it needs fewer steps", why: "Perhaps, but every call gets dearer first. The trace points at repeated input, not at too many steps." }
+    - { id: maxtokens, text: Raise max_tokens, why: "max_tokens is a ceiling on output. The cost here is repeated input." }
+    - { id: noevals, text: Stop running evals, why: "Evals are not part of a user's run, and removing them hides the next regression." }
+    - { id: cache, text: Cache the repeated instructions and tool definitions, correct: true }
+
+hints:
+  - The trace says where the money goes. Which option acts on that?
+  - The same 10,000 tokens are sent twenty times.
+  - Choose prompt caching.
+
+success: |
+  The trace named the problem, repeated input, and caching is the lever built
+  for exactly that. It is also the rare optimisation that changes nothing about
+  behaviour, so there is nothing to re-test.
+
+  The robot now has street smarts: it delegates, it is tested, it distrusts
+  what it reads, it asks before it acts, it can be traced, and it is paid for.
+  One world remains, where every part works together on real code.
+
+links:
+  - title: Prompt caching
+    url: https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+    kind: docs
+    note: What can be cached, for how long, and how it is billed.
+  - title: Pricing
+    url: https://docs.claude.com/en/docs/about-claude/pricing
+    kind: docs
+    note: Compare model sizes and the cached-input column.
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: Routing easy work to smaller models is one of its patterns.
+
+solution: [cache]
+wrong: [bigger]

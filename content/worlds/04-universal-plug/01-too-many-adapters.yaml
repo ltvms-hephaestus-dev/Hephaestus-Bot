@@ -1,0 +1,91 @@
+id: too-many-adapters
+title: Too many adapters
+concepts:
+  - the N×M problem
+  - open standard
+  - Model Context Protocol
+
+lesson: |
+  In World 3 you wrote `get_weather` for one application. Now imagine your
+  company: a chat app, an IDE assistant and a support bot, and each should reach
+  the ticket system, the wiki, the database and the calendar.
+
+  Every app has its own way of defining tools. So each connection is written by
+  hand: three apps times four systems is twelve adapters, each to build, secure
+  and keep working. Add one app and you write four more. This is the **N×M
+  problem**.
+
+  The **Model Context Protocol (MCP)** is an open standard that turns it into
+  N+M. Each system is wrapped once, as an **MCP server**. Each AI application
+  learns the protocol once, as an **MCP client**. Any client can then use any
+  server, whoever wrote them.
+
+  It is the same move as USB: agree on the plug, and devices and computers stop
+  needing to know about each other.
+
+  MCP is governed in the open, and many AI applications and tools already speak
+  it. This world follows revision {{fact.mcp_spec}} of the specification.
+
+goal: |
+  Three apps, four systems. Without a standard you need one adapter per pair.
+  Complete the second line so it counts the pieces needed **with** MCP.
+
+scene:
+  type: robot
+  say: Twelve cables, or one plug. I know which I would rather have fitted.
+  note: "Without a standard: 3 × 4 = 12 adapters. With MCP: 3 clients and 4 servers."
+
+challenge:
+  type: fill
+  code:
+    python: |
+      apps, systems = 3, 4
+
+      # one hand-written adapter for every pair
+      without_mcp = apps * systems
+      # one client per app, one server per system
+      with_mcp = apps {{op}} systems
+    typescript: |
+      const apps = 3, systems = 4;
+
+      // one hand-written adapter for every pair
+      const withoutMcp = apps * systems;
+      // one client per app, one server per system
+      const withMcp = apps {{op}} systems;
+  blanks:
+    op:
+      placeholder: "?"
+      width: 2
+      caseSensitive: true
+      accept: { equals: "+" }
+      feedback: Each app needs one client and each system one server. How do you count them together?
+
+hints:
+  - You are no longer counting pairs. You are counting pieces.
+  - Three clients and four servers make seven pieces in total.
+  - "The operator is `+`."
+
+success: |
+  Seven pieces instead of twelve, and the gap widens fast: ten apps and fifty
+  systems is 60 instead of 500.
+
+  The bigger change is who writes them. The team that owns the ticket system
+  writes its server once, and every MCP-capable app, including ones that do not
+  exist yet, can use it.
+
+links:
+  - title: MCP specification, revision 2026-07-28
+    url: https://modelcontextprotocol.io/specification/2026-07-28
+    kind: docs
+    note: The source this world is based on.
+  - title: Hugging Face MCP Course
+    url: https://huggingface.co/learn/mcp-course/en/unit0/introduction
+    kind: course
+    note: A full free course if you want to go deeper than seven levels.
+  - title: The 2026-07-28 specification release
+    url: https://blog.modelcontextprotocol.io/posts/2026-07-28/
+    kind: article
+    note: What changed in the current revision, from the maintainers.
+
+solution: { op: "+" }
+wrong: { op: "*" }

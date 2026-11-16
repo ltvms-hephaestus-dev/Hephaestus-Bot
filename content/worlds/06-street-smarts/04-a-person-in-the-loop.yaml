@@ -1,0 +1,77 @@
+id: a-person-in-the-loop
+title: A person in the loop
+concepts:
+  - approvals
+  - permissions
+  - irreversible actions
+
+lesson: |
+  An agent that asks permission for every step is useless. An agent that never
+  asks is a liability. The skill is choosing **where** a person steps in.
+
+  Sort actions by what happens if they are wrong:
+
+  - **Reading and reversible work**: searching, reading files, running tests,
+    editing in a sandbox. Let these run. Mistakes are cheap and visible.
+  - **Actions with outside effects**: sending a message, spending money,
+    changing shared data. Ask first, and show exactly what will happen.
+  - **Irreversible or far-reaching actions**: deleting data, pushing to
+    production, emailing every customer. Always ask, whatever the instructions
+    say.
+
+  Your harness enforces this, not the model. The model proposes a tool call,
+  and before running it your code checks a **permission rule**: allow, ask, or
+  refuse. A good approval request states the action, the target and whether it
+  can be undone.
+
+  Approval also protects against the last level. A person looking at "send the
+  customer list to an unknown address" will say no.
+
+goal: |
+  An operations agent is fixing a failed deployment. Which of its proposed
+  actions should **wait for a person's approval**? Tick every one.
+
+scene:
+  type: robot
+  say: I can do all five in a second. Tell me which ones you want to see first.
+  note: "Ask yourself of each action: if this is wrong, can it be undone, and who else is affected?"
+
+challenge:
+  type: choice
+  multiple: true
+  options:
+    - { id: logs, text: Read the deployment logs, why: "Reading changes nothing. Asking here only teaches people to click yes without looking." }
+    - { id: tests, text: Run the test suite in a sandbox, why: "It is contained and repeatable. Let it run." }
+    - { id: delete, text: Delete rows from the production database, correct: true }
+    - { id: email, text: Email all customers about the outage, correct: true }
+    - { id: push, text: "Force-push to the main branch", correct: true }
+
+hints:
+  - Two of the five cannot hurt anything.
+  - Look for actions that cannot be undone, or that reach people outside the team.
+  - Tick deleting production rows, emailing all customers and the force-push.
+
+success: |
+  Three approvals instead of five, and each of the three is worth a person's
+  attention. That balance matters: when everything asks for approval, people
+  stop reading and approve by reflex.
+
+  As trust grows, the line can move. Begin with tight rules, watch what the
+  agent proposes, and loosen them for actions that have proved safe.
+
+links:
+  - title: OWASP Top 10 for LLM Applications
+    url: https://genai.owasp.org/llm-top-10/
+    kind: docs
+    note: Excessive agency, and how approval limits it.
+  - title: Claude Code overview
+    url: https://code.claude.com/docs/en/overview
+    kind: docs
+    note: A working example of allow, ask and deny rules for tools.
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: On pausing for human feedback at checkpoints.
+
+solution: [delete, email, push]
+wrong: [delete, email, push, logs]

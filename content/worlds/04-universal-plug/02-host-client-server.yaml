@@ -1,0 +1,79 @@
+id: host-client-server
+title: Host, client, server
+concepts:
+  - host
+  - MCP client
+  - MCP server
+  - who talks to whom
+
+lesson: |
+  MCP has three roles, and most confusion about it comes from mixing them up.
+
+  The **host** is the AI application the person uses: a chat app, an IDE, your
+  own agent. It owns the conversation and talks to the model. It decides which
+  servers to connect and what the model may do with them.
+
+  A **client** is a small connector that lives inside the host. The host creates
+  one client for each server it uses. The client's whole job is to speak the
+  protocol with that one server.
+
+  A **server** is a program that exposes something useful: the ticket system,
+  a database, your file system. It knows nothing about the model or the
+  conversation. It answers the protocol's requests and does the real work.
+
+  Notice what is *not* connected. The model never talks to a server. The server
+  never sees the user's chat. Everything passes through the host, which is
+  where permission and oversight live.
+
+goal: |
+  The user asks the chat app to list their open tickets. Follow the request down
+  the board. Which piece actually calls the ticket system's API?
+
+scene:
+  type: messages
+  replyLabel: back up the same path
+  replyRole: host
+  messages:
+    - { role: user, content: "Show me my open tickets." }
+    - { role: host, content: "Sends the conversation and the tool list to the model. The model asks for search_tickets.", meta: "the chat app" }
+    - { role: client, content: "Sends a tools/call request for search_tickets.", meta: "inside the host, one per server" }
+    - { role: server, content: "Receives the request and queries the ticket system.", meta: "a separate program" }
+  reply: Gives the result to the model, which writes "You have 3 open tickets…"
+  say: I only ever talk to the host. I have never met a server.
+
+challenge:
+  type: choice
+  options:
+    - { id: model, text: The model, why: "The model only writes text. It asked for the tool; it cannot reach any system." }
+    - { id: host, text: The host, why: "The host runs the conversation and decides what is allowed, but it hands the request to a client." }
+    - { id: client, text: The client, why: "The client carries the request to the server. It does not know how the ticket system works." }
+    - { id: server, text: The server, correct: true }
+
+hints:
+  - Only one piece on the board knows how the ticket system works.
+  - The client speaks the protocol. Something else speaks to the ticket system.
+  - It is the server.
+
+success: |
+  The server is the only part that knows the ticket system, which is exactly why
+  the team that owns that system can write it once for everybody.
+
+  And the host is the only part that knows the user and the model. A server
+  cannot read the conversation or call the model on its own. Keep that picture.
+  The security level at the end of this world depends on it.
+
+links:
+  - title: MCP architecture
+    url: https://modelcontextprotocol.io/specification/2026-07-28/architecture
+    kind: docs
+    note: The official description of the three roles.
+  - title: Hugging Face MCP Course
+    url: https://huggingface.co/learn/mcp-course/en/unit0/introduction
+    kind: course
+    note: Unit 1 covers the architecture with diagrams.
+  - title: MCP specification, revision 2026-07-28
+    url: https://modelcontextprotocol.io/specification/2026-07-28
+    kind: docs
+
+solution: [server]
+wrong: [client]

@@ -1,0 +1,95 @@
+id: testing-the-untestable
+title: Testing the untestable
+concepts:
+  - evals
+  - graders
+  - pass rate
+  - regression set
+
+lesson: |
+  You change one sentence of a prompt. Is the system better or worse? With
+  ordinary code you would run the tests. But the same input now gives a
+  slightly different output every time, so `assert output == expected` fails
+  on answers that are perfectly good.
+
+  The answer is an **eval**: a test suite built for outputs that vary.
+
+  - **Cases.** A set of realistic inputs, ideally taken from real usage,
+    including the awkward ones. Fifty good cases beat a thousand invented ones.
+  - **Graders.** For each case, a check of what must be *true* of the answer,
+    not of its exact wording. Use code where you can: does it parse, is the
+    priority one of three labels, does it name the right city. Where you need
+    judgement, use a model as grader, with explicit criteria.
+  - **A score.** Run every case and report the pass rate.
+
+  Keep the set. Every time you change a prompt, a tool or a model, run it again
+  and compare. Every bug found in production becomes a new case. That is your
+  regression suite.
+
+goal: |
+  The ticket summariser from World 2 is going live. Click each way of checking
+  it, then choose the one you would rely on.
+
+scene:
+  type: messages
+  needs: [choice]
+  idle: Click a method and I will show you what it tells you.
+  replyLabel: what you learn
+  replyRole: result
+  cases:
+    - when: { choice: "^eval$" }
+      messages:
+        - { role: cases, content: "60 real tickets, each labelled by a person with the right priority." }
+        - { role: graders, content: "Code checks: two lines? second line a valid priority? matches the label? summary under 20 words?" }
+      reply: "Pass rate 54 of 60. Last week it was 57. The new prompt broke three billing tickets, and here they are."
+    - when: { choice: "^exact$" }
+      messages:
+        - { role: test, content: "assert reply == \"Customer cannot log in since update 2.3.\\nPriority: high\"" }
+      reply: "Failed. The reply said 'after update 2.3' instead of 'since'. Nothing was actually wrong."
+    - when: { choice: "^manual$" }
+      messages:
+        - { role: you, content: "Try five tickets by hand before each release and read the answers." }
+      reply: All five looked fine. The three billing tickets that broke were not among them.
+    - when: { choice: "^self$" }
+      messages:
+        - { role: prompt, content: "Was your summary good? Answer yes or no." }
+      reply: "Yes. (It says yes for the three broken ones too.)"
+
+challenge:
+  type: choice
+  options:
+    - { id: exact, text: "Assert that the reply equals an expected string", why: "Good answers vary in wording, so this fails for no reason and is soon ignored." }
+    - { id: manual, text: Try a few tickets by hand before each release, why: "Useful for a first look, but it misses most cases and cannot be compared with last week." }
+    - { id: self, text: "Ask the model whether its answer was good, with no criteria", why: "Without criteria and a known right answer, the model simply approves of itself." }
+    - { id: eval, text: "A saved set of real tickets, with checks on what must be true, scored as a pass rate", correct: true }
+
+hints:
+  - You need something you can run again after every change and compare.
+  - Which method told you exactly which tickets broke?
+  - Choose the saved set of cases with checks and a pass rate.
+
+success: |
+  The eval did what tests are for: it caught a regression and pointed at it.
+  Notice that every grader on the board is plain code. Reach for a model as
+  grader only for qualities code cannot check, and then give it criteria as
+  explicit as you would give a new colleague.
+
+  Teams that ship reliable AI features are, almost without exception, teams
+  that built their evals early.
+
+links:
+  - title: Your AI product needs evals
+    url: https://hamel.dev/blog/posts/evals/
+    kind: article
+    note: A practitioner's account of building evals from real usage.
+  - title: Evaluate agent workflows
+    url: https://developers.openai.com/api/docs/guides/agent-evals
+    kind: docs
+    note: One vendor's tooling for cases, graders and traces.
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: Recommends measuring before adding any complexity.
+
+solution: [eval]
+wrong: [exact]

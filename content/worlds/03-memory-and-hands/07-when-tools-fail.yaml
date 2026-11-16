@@ -1,0 +1,108 @@
+id: when-tools-fail
+title: When tools fail
+concepts:
+  - error results
+  - letting the model recover
+  - validation
+
+lesson: |
+  Real functions fail. The city is misspelt, the service is down, the order
+  number does not exist.
+
+  When your tool raises an error, the worst things you can do are let the
+  program crash, or hide the failure and send back something that looks like
+  success. The model will then build a confident answer on nothing.
+
+  The useful thing is to **send the error back as the tool result**, marked as
+  an error and written so that it helps: what went wrong, and what would work
+  instead. An error message is a prompt too. Models are good at reading one
+  and trying again differently.
+
+  Three habits make tools dependable:
+
+  - **Validate arguments** before acting, even with a schema. Check ranges, ids
+    and permissions in your own code.
+  - **Return errors as results**, with enough detail to recover.
+  - **Limit retries.** If the same call fails repeatedly, stop and tell the user.
+
+goal: |
+  The model asked for the weather in "Lisbonn" and your function raised *city
+  not found*. Click each option to see what happens next, then choose what your
+  code should do.
+
+scene:
+  type: messages
+  needs: [choice]
+  idle: Click an option and I will show you what I do next.
+  request: { model: forge-1, tools: "get_weather" }
+  replyLabel: what happens next
+  cases:
+    - when: { choice: "^crash$" }
+      messages:
+        - { role: user, content: "Is it raining in Lisbonn?" }
+        - { role: assistant, content: "tool call  get_weather { \"city\": \"Lisbonn\" }" }
+      errorLabel: your app
+      error: "Unhandled exception: city not found. The user sees a blank screen."
+    - when: { choice: "^fake$" }
+      messages:
+        - { role: user, content: "Is it raining in Lisbonn?" }
+        - { role: assistant, content: "tool call  get_weather { \"city\": \"Lisbonn\" }" }
+        - { role: tool result, content: "{ \"condition\": \"sunny\", \"temp_c\": 20 }", meta: "made up by your code" }
+      reply: No, it is sunny in Lisbonn, 20 °C.
+      note: A confident answer about a made-up reading. Nobody will notice until it matters.
+    - when: { choice: "^empty$" }
+      messages:
+        - { role: user, content: "Is it raining in Lisbonn?" }
+        - { role: assistant, content: "tool call  get_weather { \"city\": \"Lisbonn\" }" }
+        - { role: tool result, content: "(empty)" }
+      reply: The weather service returned no data, so I cannot say.
+      note: Honest, but the model was given nothing it could use to fix the problem.
+    - when: { choice: "^error$" }
+      messages:
+        - { role: user, content: "Is it raining in Lisbonn?" }
+        - { role: assistant, content: "tool call  get_weather { \"city\": \"Lisbonn\" }" }
+        - { role: tool result, content: "No city named \"Lisbonn\". Did you mean \"Lisbon\"?", meta: "is_error: true" }
+      reply:
+        mono: true
+        stopReason: tool_use
+        content: "tool call\n  name:  get_weather\n  input: { \"city\": \"Lisbon\" }"
+      note: The model read the error and corrected its own call.
+
+challenge:
+  type: choice
+  options:
+    - { id: crash, text: Let the exception stop the program, why: "The user loses the whole conversation over a typo the model could have fixed." }
+    - { id: fake, text: Return a plausible reading so the conversation can continue, why: "Now the model states an invented fact as true. This is worse than failing." }
+    - { id: empty, text: Return an empty result, why: "The model cannot tell what went wrong, so it cannot try again sensibly." }
+    - { id: error, text: "Return the error as the tool result, marked as an error, with a suggestion", correct: true }
+
+hints:
+  - Click through all four and read what the model does with each.
+  - Only one option gives the model enough information to fix its own mistake.
+  - Choose returning the error as the tool result.
+
+success: |
+  The model treated your error message as feedback and tried again with the
+  right city. Good error results turn many failures into a short detour.
+
+  The robot now has memory and hands: it can look things up and it can act.
+  But you wrote `get_weather` for this one app. The next app, with a different
+  framework, will need it written again. World 4 fixes that with a standard
+  plug.
+
+links:
+  - title: Tool use with Claude
+    url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+    kind: docs
+    note: How error results are marked in a real API.
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: On designing tools that are hard to misuse.
+  - title: OWASP Top 10 for LLM Applications
+    url: https://genai.owasp.org/llm-top-10/
+    kind: docs
+    note: Why your code must validate what a model asks for.
+
+solution: [error]
+wrong: [empty]

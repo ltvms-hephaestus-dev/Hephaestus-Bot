@@ -1,0 +1,86 @@
+id: three-things-a-server-offers
+title: Three things a server offers
+concepts:
+  - tools
+  - resources
+  - prompts
+  - who is in control
+
+lesson: |
+  A server can offer three kinds of thing. They differ in **who decides** to
+  use them.
+
+  **Tools** are actions: search tickets, create an event, run a query. The
+  *model* decides when to call one, exactly as in World 3. Because a tool can
+  change things, the host can ask the user for approval first.
+
+  **Resources** are data to read: a file, a database row, a wiki page, each
+  with an address. The *application* decides which to load into the context,
+  often because the user picked them.
+
+  **Prompts** are ready-made templates: "summarise this ticket", "write a
+  release note". The *user* chooses one, usually from a menu or a slash command.
+
+  So: tools are model-controlled, resources are application-controlled, prompts
+  are user-controlled. In practice most servers start with tools, and many
+  never need more. Knowing all three stops you forcing everything into a tool.
+
+goal: |
+  The ticket server should let the assistant **create** a ticket when the user
+  describes a problem in the chat. Click each option, then choose the right one.
+
+scene:
+  type: messages
+  needs: [choice]
+  idle: Click an option and I will show you what the server would be offering.
+  replyLabel: what that means
+  replyRole: in control
+  cases:
+    - when: { choice: "^tool$" }
+      messages:
+        - { role: server offers, content: "tool  create_ticket(title, description)" }
+      reply: The model. It reads the chat, decides a ticket is needed and calls the tool. The host may ask the user to approve.
+    - when: { choice: "^resource$" }
+      messages:
+        - { role: server offers, content: "resource  tickets://open" }
+      reply: The application. It can load the list of open tickets into the context, but a resource is read-only. Nothing gets created.
+    - when: { choice: "^prompt$" }
+      messages:
+        - { role: server offers, content: "prompt  /new-ticket" }
+      reply: The user. They would have to pick the template from a menu themselves. The assistant cannot decide to do it.
+
+challenge:
+  type: choice
+  options:
+    - { id: resource, text: "A resource", why: "Resources are for reading data. Creating a ticket is an action." }
+    - { id: prompt, text: "A prompt", why: "A prompt is a template the user picks. Here the assistant should act when the chat calls for it." }
+    - { id: tool, text: "A tool", correct: true }
+
+hints:
+  - Creating something is an action, and the assistant should decide when it is needed.
+  - Which of the three does the model control?
+  - Choose the tool.
+
+success: |
+  An action the model should take on its own judgement is a tool. Listing the
+  open tickets could reasonably be a resource, and "/new-ticket" a prompt. The
+  same server can offer all three.
+
+  Now that you know what is offered, the next level looks at how a client asks
+  for it.
+
+links:
+  - title: MCP server features
+    url: https://modelcontextprotocol.io/specification/2026-07-28/server
+    kind: docs
+    note: Tools, resources and prompts in the specification.
+  - title: Hugging Face MCP Course
+    url: https://huggingface.co/learn/mcp-course/en/unit0/introduction
+    kind: course
+    note: Has a unit on each capability, with examples.
+  - title: MCP architecture
+    url: https://modelcontextprotocol.io/specification/2026-07-28/architecture
+    kind: docs
+
+solution: [tool]
+wrong: [resource]

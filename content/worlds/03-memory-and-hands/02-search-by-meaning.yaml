@@ -1,0 +1,89 @@
+id: search-by-meaning
+title: Search by meaning
+concepts:
+  - embedding search
+  - similarity score
+  - vector store
+  - top-k
+
+lesson: |
+  To ground an answer you first have to find the right passage among thousands.
+  Keyword search fails quickly: the customer writes "get my money back" and the
+  policy says "refund". No word in common.
+
+  In World 1 you saw that an **embedding** places text on a map where similar
+  meanings sit close together. That works for whole sentences too:
+
+  1. Ahead of time, turn every passage of your documents into an embedding and
+     save them. The place they are saved is called a **vector store**.
+  2. When a question arrives, embed the question the same way.
+  3. Ask the store for the passages whose embeddings are **closest** to it.
+
+  Closeness comes back as a **similarity score**, usually between 0 and 1. You
+  choose how many passages to take, a number known as **top-k**.
+
+  Too few and you may miss the answer. Too many and you bury it in noise, and
+  pay for every extra token.
+
+goal: |
+  Fetch enough passages to include **both** that talk about getting money back,
+  and none that do not. Change the number and watch which ones are sent.
+
+scene:
+  type: retrieval
+  query: How do I get my money back?
+  bind: { k: k }
+  chunks:
+    - { text: "Refunds are issued to the original payment method within 14 days.", score: 0.84, source: refund-policy.md }
+    - { text: "To return an item, print the prepaid label and drop it at a post office.", score: 0.79, source: returns.md }
+    - { text: "Standard shipping takes three to five working days.", score: 0.41, source: shipping.md }
+    - { text: "Our forge was founded in 1987 by two blacksmiths.", score: 0.12, source: about.md }
+  note: Look at the top passage. It shares no words with the question, and it is still the closest in meaning.
+
+challenge:
+  type: fill
+  code:
+    python: |
+      question = "How do I get my money back?"
+      passages = store.search(embed(question), top_k={{k}})
+    typescript: |
+      const question = "How do I get my money back?";
+      const passages = await store.search(embed(question), {
+        topK: {{k}},
+      });
+  blanks:
+    k:
+      placeholder: "?"
+      width: 3
+      accept: { number: { eq: 2 } }
+      feedback: Either a useful passage is left out, or one about something else is being sent.
+
+hints:
+  - The board ranks every passage by score. You control how far down the list the cut falls.
+  - Two passages score near 0.8. The next one drops to 0.41 and is about shipping.
+  - Set it to `2`.
+
+success: |
+  You found the refund passage without matching a single keyword. That is the
+  whole value of embedding search.
+
+  Notice the gap between 0.79 and 0.41. Real systems often use such a gap, or a
+  minimum score, instead of a fixed number, and add a second, slower model to
+  re-rank the candidates.
+
+links:
+  - title: "Embeddings: what they are and why they matter"
+    url: https://simonwillison.net/2023/Oct/23/embeddings/
+    kind: article
+    note: Builds a working semantic search step by step.
+  - title: Embeddings with the Gemini API
+    url: https://ai.google.dev/gemini-api/docs/embeddings
+    kind: docs
+    note: Turning your own text into vectors with one API call.
+  - title: The Illustrated Word2vec
+    url: https://jalammar.github.io/illustrated-word2vec/
+    kind: article
+    note: Why similar meanings end up close together.
+
+solution: { k: "2" }
+wrong: { k: "1" }

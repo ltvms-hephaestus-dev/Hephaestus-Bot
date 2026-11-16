@@ -1,0 +1,93 @@
+id: reading-a-trace
+title: Reading a trace
+concepts:
+  - observability
+  - traces
+  - finding the cause
+
+lesson: |
+  An agent run that went wrong leaves no stack trace. The answer was slow, or
+  expensive, or odd, and the reason is somewhere in a dozen steps the model
+  chose for itself.
+
+  So you record every run as a **trace**: the ordered list of everything that
+  happened. For each step it keeps what went in, what came out, how many tokens
+  were used and how long it took. Model calls and tool calls are both steps.
+
+  Reading one is a skill of its own:
+
+  - **Start from the symptom**, then walk backwards. A slow model call is
+    usually slow because of what an *earlier* step put into the window.
+  - **Watch the input tokens grow.** A sudden jump marks the step that flooded
+    the context.
+  - **Read the actual tool results**, not just their names. Many "the model is
+    being stupid" bugs are a tool returning something unhelpful.
+
+  Tracing tools exist for every stack. Even a JSON file per run is far better
+  than nothing. You cannot improve what you cannot see.
+
+goal: |
+  This run took 29 seconds and used over 100,000 input tokens for a simple
+  question. Read the trace on the board. Which step should you fix first?
+
+scene:
+  type: messages
+  replyLabel: run total
+  replyRole: total
+  messages:
+    - { role: user, content: "Why did the nightly build fail?" }
+    - { role: step 1 model, content: "Asks for search_logs(query: error)", meta: "input 2,000 tokens · 1.1 s" }
+    - { role: step 2 tool, content: "search_logs returns every log line containing 'error' from the last 30 days.", meta: "returns 48,000 tokens · 0.4 s" }
+    - { role: step 3 model, content: "Asks for get_service_status(service: database)", meta: "input 50,200 tokens · 14 s" }
+    - { role: step 4 tool, content: "The test database has been down since 02:10.", meta: "returns 30 tokens · 0.2 s" }
+    - { role: step 5 model, content: "Final answer: the test database is down.", meta: "input 50,300 tokens · 13 s" }
+  reply: 102,500 input tokens, 29 seconds. Almost all of it is one tool result, carried through two model calls.
+
+challenge:
+  type: fill
+  code:
+    python: |
+      # Steps 3 and 5 are the slow ones.
+      # Which step caused that?
+      fix_first = {{step}}
+    typescript: |
+      // Steps 3 and 5 are the slow ones.
+      // Which step caused that?
+      const fixFirst = {{step}};
+  blanks:
+    step:
+      placeholder: "?"
+      width: 3
+      accept: { number: { eq: 2 } }
+      feedback: That step shows the symptom. Look for the step where the input tokens jumped.
+
+hints:
+  - Compare the input tokens of step 1 with those of step 3. What happened in between?
+  - A model call is slow when its window is large. Which step made the window large?
+  - "Fix step `2`: the tool returned 48,000 tokens."
+
+success: |
+  Steps 3 and 5 were slow, but they were the victims. Step 2 dumped thirty days
+  of raw log lines into the window, and every later model call had to read all
+  of it again.
+
+  The fix is in the tool, not the prompt: return the twenty most recent
+  matches, or a count with the top few. One change to a tool result would cut
+  this run's cost by more than nine tenths.
+
+links:
+  - title: Effective context engineering for AI agents
+    url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    kind: article
+    note: Why tool results should be compact and high-signal.
+  - title: Evaluate agent workflows
+    url: https://developers.openai.com/api/docs/guides/agent-evals
+    kind: docs
+    note: Tracing and grading runs in one vendor's tooling.
+  - title: Your AI product needs evals
+    url: https://hamel.dev/blog/posts/evals/
+    kind: article
+    note: Argues that looking at traces is the highest-value habit there is.
+
+solution: { step: "2" }
+wrong: { step: "3" }

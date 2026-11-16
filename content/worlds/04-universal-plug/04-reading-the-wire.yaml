@@ -1,0 +1,111 @@
+id: reading-the-wire
+title: Reading the wire
+concepts:
+  - JSON-RPC
+  - tools/list
+  - tools/call
+
+lesson: |
+  Client and server exchange **JSON-RPC 2.0** messages. That is a small, old
+  and boring standard, which is what you want from plumbing.
+
+  A **request** is a JSON object with four fields:
+
+  - `"jsonrpc": "2.0"`, always;
+  - an `id`, chosen by the client, so the answer can be matched to the question;
+  - a `method`, the name of what is being asked;
+  - `params`, the arguments.
+
+  The **response** carries the same `id` and either a `result` or an `error`.
+
+  For tools, two methods matter. `tools/list` asks the server what it offers,
+  and the answer is a list of tool definitions: name, description, input schema.
+  You have written one of those already. `tools/call` runs one. Its params are
+  the tool's `name` and an `arguments` object that fits the schema.
+
+  When something misbehaves, reading these messages tells you which side got
+  it wrong.
+
+goal: |
+  The board shows what the server answered to `tools/list`. Write the request
+  that calls that tool to find the **open** tickets.
+
+scene:
+  type: messages
+  replyLabel: the server answers
+  replyRole: server
+  messages:
+    - { role: client, content: "{ \"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/list\" }" }
+    - { role: server, content: "tools: [ { name: \"search_tickets\",\n  description: \"Find support tickets by status.\",\n  inputSchema: { status: \"open\" | \"closed\", required } } ]", meta: "id: 1" }
+    - { role: client, content: "your request", meta: "id: 2" }
+  reply: "error: the request is not a valid tools/call for search_tickets yet"
+  cases:
+    - when: { json: '"method"\s*:\s*"tools/call"[\s\S]*"name"\s*:\s*"search_tickets"[\s\S]*"status"\s*:\s*"open"' }
+      reply:
+        mono: true
+        content: "{ \"jsonrpc\": \"2.0\", \"id\": 2,\n  \"result\": {\n    \"content\": [ { \"type\": \"text\",\n      \"text\": \"3 open tickets: #101, #104, #107\" } ],\n    \"isError\": false } }"
+
+challenge:
+  type: json
+  starter: |
+    {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "method": "",
+      "params": {
+        "name": "",
+        "arguments": {}
+      }
+    }
+  rules:
+    - { path: jsonrpc, op: equals, value: "2.0", message: 'Keep "jsonrpc": "2.0".' }
+    - { path: id, op: exists, message: 'Keep an "id", so the response can be matched to this request.' }
+    - { path: method, op: equals, value: tools/call, message: 'Set "method" to "tools/call".' }
+    - { path: params.name, op: equals, value: search_tickets, message: 'Set "name" to the tool the server listed.' }
+    - { path: params.arguments.status, op: equals, value: open, message: 'Pass "status": "open" inside "arguments".' }
+
+hints:
+  - The method for running a tool is named in the lesson. The tool's name is on the board.
+  - The input schema on the board says which argument the tool needs and which values it accepts.
+  - 'Use `"method": "tools/call"`, `"name": "search_tickets"` and `"arguments": { "status": "open" }`.'
+
+success: |
+  The result came back as a list of content blocks with an `isError` flag. That
+  is the tool result from World 3 in MCP's clothes: the host passes it to the
+  model, and a failed tool reports itself with `isError: true` so the model can
+  react.
+
+  Nothing in these messages mentions a model. MCP is ordinary request and
+  response plumbing, which is why any program can speak it.
+
+links:
+  - title: MCP base protocol
+    url: https://modelcontextprotocol.io/specification/2026-07-28/basic
+    kind: docs
+    note: The message format in full.
+  - title: MCP server features
+    url: https://modelcontextprotocol.io/specification/2026-07-28/server
+    kind: docs
+    note: Exact shapes of tools/list and tools/call.
+  - title: Getting started with JSON Schema
+    url: https://json-schema.org/learn/getting-started-step-by-step
+    kind: docs
+    note: For reading the inputSchema a server sends you.
+
+solution: |
+  {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/call",
+    "params": {
+      "name": "search_tickets",
+      "arguments": { "status": "open" }
+    }
+  }
+wrong: |
+  {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/list",
+    "params": { "name": "search_tickets", "arguments": {} }
+  }

@@ -18,11 +18,11 @@ The order matters. Each world answers the question the one before it raises.
 |---|---|---|---|
 | 1 | How LLMs work | Brain | **Playable, 7 levels** |
 | 2 | LLMs from code | Voice | **Playable, 7 levels** |
-| 3 | Knowledge and tools | Memory and hands | Planned, 7 levels |
-| 4 | Model Context Protocol | Universal plug | Planned, 7 levels |
-| 5 | Agents | Autonomy | Planned, 7 levels |
-| 6 | Agentic systems in production | Street smarts | Planned, 6 levels |
-| 7 | Capstone: real code | Graduation | Planned, 4 levels |
+| 3 | Knowledge and tools | Memory and hands | **Playable, 7 levels** |
+| 4 | Model Context Protocol | Universal plug | **Playable, 7 levels** |
+| 5 | Agents | Autonomy | **Playable, 7 levels** |
+| 6 | Agentic systems in production | Street smarts | **Playable, 6 levels** |
+| 7 | Capstone: real code | Graduation | **Playable, 4 levels** |
 
 Every level has a short lesson, a code challenge in **Python and TypeScript**, a board
 that reacts to your answer, graded hints, and links to primary sources. All concepts

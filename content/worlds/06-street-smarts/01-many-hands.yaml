@@ -1,0 +1,95 @@
+id: many-hands
+title: Many hands
+concepts:
+  - subagents
+  - delegation
+  - isolated context
+
+lesson: |
+  One agent, one window. Some jobs are too big for that: reading fifty pages
+  about each of five competitors would bury the agent in material long before
+  it could write a report.
+
+  A **subagent** is an agent started by another agent to do one piece of the
+  work. The main agent hands it a task. The subagent runs its own loop in its
+  **own fresh context window**, reads whatever it needs, and returns only a
+  short result. All the pages it read are thrown away with its window.
+
+  That is the real benefit: **context isolation**. The main agent's window
+  holds five tidy summaries, not 250 pages. Subagents can also run in parallel,
+  and each can have its own instructions and a narrower set of tools.
+
+  The costs are real too. More model calls in total. The subagent knows only
+  what its task description tells it, so a vague brief gives a useless answer.
+  And several agents editing the same thing will collide.
+
+  Use subagents for work that splits into independent parts with small results.
+
+goal: |
+  An agent must report on five competitors. Each needs about fifty pages of
+  reading. The final report needs one paragraph on each. Click each plan, then
+  choose.
+
+scene:
+  type: messages
+  needs: [choice]
+  idle: Click a plan and I will show you my window at the end.
+  replyLabel: the main agent's window at the end
+  replyRole: window
+  cases:
+    - when: { choice: "^subagents$" }
+      messages:
+        - { role: main agent, content: "Starts five subagents, each briefed: research one competitor, return a 150-word summary with sources." }
+        - { role: subagents, content: "Each reads about 50 pages in its own window, then returns its summary. Their windows are discarded.", meta: "run in parallel" }
+      reply: 5 summaries, about 1,000 tokens. Plenty of room left to write a careful report.
+    - when: { choice: "^alone$" }
+      messages:
+        - { role: main agent, content: "Reads 50 pages on the first competitor, then the second, then the third…", meta: "one window" }
+      reply: Full after the third competitor. The notes on the first have already been pushed out.
+    - when: { choice: "^bigger$" }
+      messages:
+        - { role: main agent, content: "Reads all 250 pages into a very large window.", meta: "one window, one long run" }
+      reply: It fits, just. Every later turn resends 250 pages, and details from the middle are missed.
+    - when: { choice: "^finetune$" }
+      messages:
+        - { role: you, content: "Spend three weeks preparing data and training a model on competitor pages." }
+      reply: The pages changed last Tuesday. The model does not know.
+
+challenge:
+  type: choice
+  options:
+    - { id: alone, text: One agent reads everything itself, why: "Its window fills with raw pages and the early findings are lost." }
+    - { id: bigger, text: "Use a model with a much larger window and read it all at once", why: "Fitting is not the same as using well. It is slow, costly on every turn, and attention thins out." }
+    - { id: finetune, text: Fine-tune a model on the competitors' pages, why: "Training is slow and the result is out of date at once. This is a retrieval job." }
+    - { id: subagents, text: "Start one subagent per competitor, each returning a short summary", correct: true }
+
+hints:
+  - The reading is large. What the report needs from it is small.
+  - Which plan keeps the raw pages out of the main agent's window?
+  - Choose one subagent per competitor.
+
+success: |
+  Five independent parts, a small result from each: the textbook case for
+  subagents. The main agent stayed clear-headed because it never saw a single
+  raw page.
+
+  The opposite case matters as much. If the parts depend on each other, or all
+  edit the same file, keep one agent. More agents is not more intelligence. It
+  is more context windows, and more coordination.
+
+links:
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: Orchestrator and workers is the pattern underneath.
+  - title: Effective context engineering for AI agents
+    url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    kind: article
+    note: Explains sub-agent architectures as a context technique.
+  - title: Claude Code overview
+    url: https://code.claude.com/docs/en/overview
+    kind: docs
+    note: A coding agent that uses subagents for search and review.
+
+solution: [subagents]
+wrong: [bigger]
