@@ -22,7 +22,7 @@ The order matters. Each world answers the question the one before it raises.
 | 4 | Model Context Protocol | Universal plug | **Playable, 7 levels** |
 | 5 | Agents | Autonomy | **Playable, 7 levels** |
 | 6 | Agentic systems in production | Street smarts | **Playable, 6 levels** |
-| 7 | Capstone: real code | Graduation | **Playable, 4 levels** |
+| 7 | Capstone: real code | Graduation | **Playable, 7 levels** |
 
 Every level has a short lesson, a code challenge in **Python and TypeScript**, a board
 that reacts to your answer, graded hints, and links to primary sources. All concepts

@@ -225,9 +225,9 @@ describe('request/reply boards agree with their lessons (World 2)', () => {
 });
 
 describe('the full path is written', () => {
-  it('has 45 levels in 7 worlds and nothing left planned', () => {
-    expect(worlds.map((w) => w.levels.length)).toEqual([7, 7, 7, 7, 7, 6, 4]);
-    expect(levels).toHaveLength(45);
+  it('has 48 levels in 7 worlds and nothing left planned', () => {
+    expect(worlds.map((w) => w.levels.length)).toEqual([7, 7, 7, 7, 7, 6, 7]);
+    expect(levels).toHaveLength(48);
     for (const w of worlds) expect(w.planned ?? [], w.id).toHaveLength(0);
   });
 
@@ -329,6 +329,72 @@ describe('boards agree with their lessons (Worlds 3 to 7)', () => {
       }
       expect(seen.size, l.id).toBe(l.challenge.options.length);
     }
+  });
+});
+
+describe('World 7, working with a coding agent (levels 4 to 6)', () => {
+  const w7 = () => worlds.find((w) => w.id === 'graduation')!;
+  const find = (id: string) => w7().levels.find((l) => l.id === id)!;
+  const view = (id: string, values: Record<string, string>) => resolveMessages(find(id).scene, values);
+  const text = (v: ReturnType<typeof view>) => JSON.stringify([v.messages, v.reply?.content, v.error, v.note]);
+
+  it('plays in this order and still ends on the simplest thing that works', () => {
+    expect(w7().levels.map((l) => l.id)).toEqual([
+      'inside-a-coding-agent',
+      'one-request-end-to-end',
+      'fix-a-broken-run',
+      'brief-the-agent',
+      'set-the-permissions',
+      'trust-but-verify',
+      'the-simplest-thing-that-works',
+    ]);
+  });
+
+  it('brief the agent: a single-choice level whose right answer is the specific brief', () => {
+    const l = find('brief-the-agent');
+    if (l.challenge.type !== 'choice') throw new Error('expected a choice challenge');
+    expect(l.challenge.multiple ?? false).toBe(false);
+    expect(l.challenge.options.map((o) => o.id).sort()).toEqual(['everything', 'specific', 'stepwise', 'vague']);
+    expect(l.challenge.options.find((o) => o.correct)?.id).toBe('specific');
+    expect(l.scene.type).toBe('messages');
+    expect(view('brief-the-agent', {}).pending).toBe(true);
+    // Only the specific brief ends with the tests passing.
+    for (const o of l.challenge.options) {
+      expect(/tests pass/i.test(view('brief-the-agent', { choice: o.id }).reply?.content ?? ''), o.id).toBe(o.id === 'specific');
+    }
+  });
+
+  it('set the permissions: only git_push needs approval; asking on edits is shown as the wrong trade', async () => {
+    const l = find('set-the-permissions');
+    if (l.challenge.type !== 'fill') throw new Error('expected a fill challenge');
+    expect(Object.keys(l.challenge.blanks)).toEqual(['tool']);
+    expect(await checkBlank('git_push', l.challenge.blanks.tool!)).toBe(true);
+    for (const bad of ['edit_file', 'run_tests', 'read_file', 'everything']) {
+      expect(await checkBlank(bad, l.challenge.blanks.tool!), bad).toBe(false);
+    }
+    expect(l.scene.type).toBe('messages');
+    expect(view('set-the-permissions', {}).pending).toBe(true);
+    const good = view('set-the-permissions', { tool: 'git_push' });
+    expect(good.error).toBeUndefined();
+    expect(text(good)).toMatch(/approv/i);
+    const noisy = view('set-the-permissions', { tool: 'edit_file' });
+    expect(noisy.error).toBeUndefined();
+    expect(noisy.note).toBeDefined();
+    expect(text(noisy)).not.toEqual(text(good));
+    expect(view('set-the-permissions', { tool: 'launch_rocket' }).error).toMatch(/launch_rocket/);
+  });
+
+  it('trust but verify: only reading the diff reveals the deleted test', () => {
+    const l = find('trust-but-verify');
+    if (l.challenge.type !== 'choice') throw new Error('expected a choice challenge');
+    expect(l.challenge.options.map((o) => o.id).sort()).toEqual(['ask', 'diff', 'report', 'rerun']);
+    expect(l.challenge.options.find((o) => o.correct)?.id).toBe('diff');
+    expect(view('trust-but-verify', {}).pending).toBe(true);
+    for (const o of l.challenge.options) {
+      expect(/delet/i.test(text(view('trust-but-verify', { choice: o.id }))), o.id).toBe(o.id === 'diff');
+    }
+    // Rerunning the tests alone is fooled: they pass because the failing one is gone.
+    expect(view('trust-but-verify', { choice: 'rerun' }).reply?.content).toMatch(/pass/i);
   });
 });
 

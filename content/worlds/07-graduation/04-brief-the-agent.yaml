@@ -1,0 +1,106 @@
+id: brief-the-agent
+title: Brief the agent
+concepts:
+  - writing a brief
+  - done-check
+  - scope
+  - pattern to copy
+
+lesson: |
+  You have seen what a coding agent does once it has a task. Now the part that
+  is yours: giving it the task.
+
+  An agent starts every job knowing nothing about your project except what it
+  can read. It cannot ask what you meant over coffee. So the brief decides
+  most of what happens next.
+
+  A good brief has four parts:
+
+  1. **The goal**, in one sentence: what should be true afterwards.
+  2. **A way to check it is done**, ideally a command the agent can run. This
+     is the most useful part, because it lets the agent test its own work
+     and keep going until the check is green.
+  3. **Scope**: what is in, and what to leave alone.
+  4. **An example to follow**: "do it the way `src/billing/dates.ts` does".
+     Pointing at real code beats describing a style.
+
+  Two mistakes sit on either side. A brief that is too loose ("fix the bug")
+  makes the agent guess. A brief that dictates every keystroke removes the
+  point of having an agent, and breaks the moment the code is not as you
+  remembered. Say what you want and how to know it is done. Leave the how to
+  the agent.
+
+goal: |
+  The report page shows next month's date on the 31st. Click each way of
+  briefing the agent and watch what it does. Then choose the brief you would
+  actually send.
+
+scene:
+  type: messages
+  needs: [choice]
+  idle: Click a brief and I will show you what the agent does with it.
+  replyLabel: what the agent does
+  replyRole: agent
+  cases:
+    - when: { choice: "^vague$" }
+      messages:
+        - { role: user, content: "Fix the date bug." }
+        - { role: agent, content: "Which date bug? I found 14 places that handle dates. Guessing at the one in report.ts.", meta: "no way to check" }
+      reply: "Changed the date format in report.ts and stopped. I cannot tell whether that was the bug you meant."
+      note: Nothing in the brief says what done looks like, so the agent picked something and hoped.
+    - when: { choice: "^everything$" }
+      messages:
+        - { role: user, content: "Fix the date bug, tidy up the date helpers, and add CSV export and a dark mode while you are in there." }
+        - { role: agent, content: "Starting with the helpers. Then CSV. Then the bug.", meta: "turn 31 of 40" }
+      reply: "Budget used up. The diff touches 41 files. The date bug is still there."
+      note: Several jobs in one brief means one large, unreviewable change, and the real problem is the one that gets lost.
+    - when: { choice: "^stepwise$" }
+      messages:
+        - { role: user, content: "Open report.ts. Go to line 88. Change `getMonth() + 1` to `getMonth()`. Save it. Open dates.ts. Go to line 12..." }
+        - { role: agent, content: "Line 88 is now a comment. The file changed since you looked. Following your steps anyway.", meta: "no room to react" }
+      reply: "Did exactly what you dictated. The code now compiles, and the bug has moved to a different line."
+      note: Dictating each step wastes the agent's main strength, which is reading the code and reacting to what it finds.
+    - when: { choice: "^specific$" }
+      messages:
+        - { role: user, content: "Goal: the report shows the right date on the 31st. Check: run `npm test -- dates`. Scope: only src/report/. Do not touch the billing code. Follow the pattern in src/billing/dates.ts." }
+        - { role: agent, content: "Read both files. Wrote a failing test for the 31st. Fixed report.ts the way billing does it. Ran `npm test -- dates`.", meta: "5 turns" }
+      reply: "Done. The new test and the 12 existing date tests pass. Only src/report/ changed."
+      note: Goal, check, scope and an example. The agent could verify its own work.
+
+challenge:
+  type: choice
+  options:
+    - { id: vague, text: "\"Fix the date bug.\"", why: "Short, but the agent has to guess which bug, where, and when it is finished." }
+    - { id: everything, text: "Ask for the fix, a refactor of the date helpers and two new features in one brief", why: "Too many jobs at once. The change becomes too big to review and the actual bug is easy to lose." }
+    - { id: stepwise, text: "List every edit line by line, file by file", why: "You are doing the thinking and the agent is only typing. It cannot adapt when the code differs from your memory of it." }
+    - { id: specific, text: "State the goal, give the command that proves it is done, limit the scope, and name a file to copy the pattern from", correct: true }
+
+hints:
+  - The agent should be able to tell for itself when it has finished.
+  - Two options are at opposite extremes, too little and too much direction. Another packs in too many jobs.
+  - Choose the brief with a goal, a check you can run, a scope, and an example to follow.
+
+success: |
+  The specific brief gave the agent everything it could not have found by
+  itself: what done means, a command to check it, where to stay, and what good
+  looks like here. The agent supplied the rest.
+
+  The agent is now working on your code, and some of what it does has
+  consequences. Next: what it may do without asking you first.
+
+links:
+  - title: Claude Code overview
+    url: https://code.claude.com/docs/en/overview
+    kind: docs
+    note: What a coding agent can read, run and change in your project.
+  - title: Building effective agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    kind: article
+    note: Why a clear task and a way to check the result matter so much.
+  - title: Prompt engineering overview
+    url: https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview
+    kind: docs
+    note: Being clear and direct, and giving examples.
+
+solution: [specific]
+wrong: [vague]
