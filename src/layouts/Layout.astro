@@ -33,13 +33,15 @@ const nav = [
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta name="theme-color" content="#1f262a" />
-    <link rel="icon" href={url('favicon.svg')} type="image/svg+xml" />
+    <meta property="og:image" content={new URL(url('logo.png'), Astro.site).href} />
+    <link rel="icon" href={url('favicon-32.png')} type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href={url('apple-touch-icon.png')} />
   </head>
   <body>
     <a class="visually-hidden" href="#main">Skip to content</a>
     <header class="site-head">
       <div class="wrap site-head__in">
-        <a class="brand" href={url('/')}><span class="brand__mark" aria-hidden="true"></span>{SITE.name}</a>
+        <a class="brand" href={url('/')}><img class="brand__logo" src={url('logo-96.png')} alt="" width="40" height="40" />{SITE.name}</a>
         <nav class="site-nav" aria-label="Site">
           {nav.map((n) => <a href={n.href} aria-current={n.match.test(here) ? 'page' : undefined}>{n.label}</a>)}
           <a href={`https://github.com/${SITE.repo}`}>GitHub</a>
