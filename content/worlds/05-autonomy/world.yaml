@@ -1,0 +1,25 @@
+id: autonomy
+order: 5
+title: "Agents"
+part: Autonomy
+question: "What changes when the model decides its own next step?"
+summary: >-
+  An agent is a model using tools in a loop until a goal is met. This world builds
+  that loop, shows when a fixed workflow is the better choice, and covers what keeps a
+  loop from running forever or forgetting what it was doing.
+# Not written yet. Move a level out of this list when you add its file.
+planned:
+  - title: "A loop with tools"
+    concepts: ["agent loop", "observe, decide, act"]
+  - title: "Workflow or agent"
+    concepts: ["predefined path", "model-directed path", "start simple"]
+  - title: "Chain, route, fan out"
+    concepts: ["prompt chaining", "routing", "parallelization"]
+  - title: "Plan and review"
+    concepts: ["orchestrator and workers", "evaluator and optimizer"]
+  - title: "Knowing when to stop"
+    concepts: ["stop conditions", "step and token budgets"]
+  - title: "Remembering between steps"
+    concepts: ["scratchpad", "memory", "state"]
+  - title: "What goes in the window"
+    concepts: ["context engineering", "compaction", "just-in-time retrieval"]

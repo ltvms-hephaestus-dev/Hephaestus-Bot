@@ -1,0 +1,56 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { loadBeyond } from '../lib/content';
+
+const beyond = loadBeyond();
+const KIND: Record<string, string> = { docs: 'Docs', article: 'Article', video: 'Video', paper: 'Paper', course: 'Course', tool: 'Tool', code: 'Code' };
+---
+
+<Layout title="Beyond the game" description="Where to learn what the game leaves out: real API calls, training, fine-tuning, frameworks and more.">
+  <header class="page-head">
+    <h1>Beyond the game</h1>
+    <p class="prose">{beyond.intro}</p>
+    <p class="muted">Links last checked on {beyond.verified}.</p>
+  </header>
+
+  {beyond.sections.map((s) => (
+    <section class="beyond-section" id={s.id}>
+      <div>
+        <h2>{s.title}</h2>
+        <p>{s.why}</p>
+      </div>
+      <div>
+        {s.topics.map((t) => (
+          <div class="beyond-topic">
+            <h3>{t.title}</h3>
+            <p>{t.about}</p>
+            <ul class="links">
+              {t.links.map((l) => (
+                <li>
+                  <span class="links__kind">{KIND[l.kind]}</span>
+                  <a href={l.url} target="_blank" rel="noopener noreferrer">{l.title}</a>
+                  {l.note && <span class="links__note">{l.note}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+  ))}
+
+  <section class="beyond-section" id="not-covered">
+    <div>
+      <h2>Left out on purpose</h2>
+      <p>Things you might expect and will not find, and why.</p>
+    </div>
+    <div>
+      {beyond.notCovered.map((n) => (
+        <div class="beyond-topic">
+          <h3>{n.title}</h3>
+          <p>{n.about}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+</Layout>

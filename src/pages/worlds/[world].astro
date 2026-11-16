@@ -1,0 +1,79 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import MapList from '../../components/MapList.astro';
+import TopicMap from '../../components/TopicMap';
+import { SITE } from '../../config';
+import { loadWorlds, worldTree } from '../../lib/content';
+import { fullId, levelHref } from '../../lib/site';
+import { temper, temperStyle } from '../../lib/temper';
+import { url } from '../../lib/url';
+
+export function getStaticPaths() {
+  return loadWorlds().map((w) => ({ params: { world: w.id }, props: { id: w.id } }));
+}
+
+const world = loadWorlds().find((w) => w.id === Astro.props.id)!;
+const tree = worldTree(world, url);
+tree.content = `<strong>${world.title}</strong>`;
+const planned = world.planned ?? [];
+const rows = world.levels.reduce((n, l) => n + l.concepts.length, 0) + planned.length;
+---
+
+<Layout title={`World ${world.order}: ${world.title}`} description={world.summary}>
+  <div style={temperStyle(world.order)}>
+    <header class="page-head">
+      <p class="swatch">World {world.order}. The robot gets: {world.part.toLowerCase()}. Temper colour: {temper(world.order).name}.</p>
+      <h1>{world.title}</h1>
+      <p class="page-head__q">“{world.question}”</p>
+      <p class="prose">{world.summary}</p>
+    </header>
+
+    {world.levels.length > 0 && (
+      <ol class="levels">
+        {world.levels.map((l) => (
+          <li data-level={fullId(world, l)}>
+            <div>
+              <a href={levelHref(world, l)}>{l.title}</a>
+              <small>{l.concepts.join(', ')}</small>
+            </div>
+            <span class="state">not solved yet</span>
+          </li>
+        ))}
+      </ol>
+    )}
+
+    {planned.length > 0 && (
+      <section>
+        <h2>{world.levels.length > 0 ? 'Still being forged' : 'Being forged'}</h2>
+        <p class="prose">
+          These levels are planned and not written yet. You can
+          <a href={url('forge/')}>draft one in the lesson forge</a> or follow progress on
+          <a href={`https://github.com/${SITE.repo}`}>GitHub</a>.
+        </p>
+        <ol class="levels" start={world.levels.length + 1} style={`counter-reset: lvl ${world.levels.length}`}>
+          {planned.map((p) => (
+            <li class="is-planned">
+              <div>
+                <strong>{p.title}</strong>
+                <small>{(p.concepts ?? []).join(', ')}</small>
+              </div>
+              <span class="state">planned</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )}
+
+    <section>
+      <h2>Topic map</h2>
+      <div class="mapbox">
+        <TopicMap client:visible tree={tree} expand={3} rows={rows} />
+        <details>
+          <summary>Read the map as a list</summary>
+          <div class="maplist"><MapList node={tree} /></div>
+        </details>
+      </div>
+      <p><a href={url('map/')}>Open the map of the whole game</a></p>
+    </section>
+  </div>
+</Layout>

@@ -1,0 +1,9 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CustomPlay from '../../components/CustomPlay';
+import { url } from '../../lib/url';
+---
+
+<Layout title="Play my lesson">
+  <CustomPlay client:only="preact" forgeUrl={url('forge/')} />
+</Layout>

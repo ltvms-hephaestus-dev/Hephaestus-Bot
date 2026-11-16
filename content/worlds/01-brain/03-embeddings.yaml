@@ -1,0 +1,93 @@
+id: embeddings
+title: Meaning as a place
+concepts:
+  - embeddings
+  - vectors
+  - similarity is distance
+  - directions carry meaning
+
+lesson: |
+  A token id is just a number: 15339 tells the model nothing about meaning. So the
+  first thing the model does is swap every token for an **embedding**, a long list
+  of numbers (a vector) that works like coordinates on a map.
+
+  On that map, tokens used in similar ways end up close together. `king` sits
+  near `queen`; both are far from `banana`. Nobody places them by hand. The
+  positions are learned during training.
+
+  Directions on the map mean something too. The step from `man` to `woman` is
+  nearly the same step as from `king` to `queen`. That lets you do arithmetic
+  with meaning.
+
+  Real embeddings have hundreds or thousands of dimensions. The board squashes
+  the idea into two so you can see it.
+
+goal: |
+  Start at `king`, subtract `man`, and add one more word so the result lands on
+  **queen**. Try a few words and watch where the arrow goes.
+
+scene:
+  type: embeddings
+  expr: { start: king, minus: man }
+  bind: { plus: word }
+  points:
+    man: [3, 2]
+    woman: [3, 5.5]
+    king: [8, 2.2]
+    queen: [8, 5.7]
+    boy: [0.6, 1.2]
+    girl: [0.6, 4.7]
+    prince: [5, 1.4]
+    princess: [5, 4.9]
+    hammer: [2.4, 8.6]
+    anvil: [4.4, 9.3]
+    forge: [0.8, 9.6]
+    apple: [10.4, 8.4]
+    banana: [11.6, 7.4]
+    pizza: [9.6, 9.6]
+
+challenge:
+  type: fill
+  code:
+    python: |
+      query = embed("king") - embed("man") + embed("{{word}}")
+
+      assert nearest_word(query) == "queen"
+    typescript: |
+      const royal = subtract(embed("king"), embed("man"));
+      const query = add(royal, embed("{{word}}"));
+
+      console.assert(nearestWord(query) === "queen");
+  blanks:
+    word:
+      placeholder: word
+      width: 9
+      accept: { equals: woman }
+      feedback: Watch where the solid arrow lands. You want it to end on "queen".
+
+hints:
+  - Subtracting `man` from `king` removes "male" and keeps "royal". What do you add back to get a queen?
+  - The dashed arrow shows the step you are making. Copy the step that goes from `man` straight up.
+  - Add `woman`.
+
+success: |
+  This is why search by meaning works. Turn a question and a pile of documents into
+  embeddings, and the closest documents are the relevant ones, even when they
+  share no words with the question. You will build exactly that in World 3.
+
+links:
+  - title: The Illustrated Word2vec
+    url: https://jalammar.github.io/illustrated-word2vec/
+    kind: article
+    note: Where the king and queen example comes from, with pictures.
+  - title: "Embeddings: what they are and why they matter"
+    url: https://simonwillison.net/2023/Oct/23/embeddings/
+    kind: article
+    note: A developer's tour of what you can build with them.
+  - title: Embedding Projector
+    url: https://projector.tensorflow.org/
+    kind: tool
+    note: Fly through a real embedding space in 3D.
+
+solution: { word: woman }
+wrong: { word: girl }

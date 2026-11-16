@@ -1,0 +1,14 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { url } from '../lib/url';
+---
+
+<Layout title="Page not found">
+  <header class="page-head">
+    <h1>This page was never forged</h1>
+    <p class="prose">
+      The address does not match any page. Go back to <a href={url('/')}>the worlds</a> or open the
+      <a href={url('map/')}>topic map</a> to find a level.
+    </p>
+  </header>
+</Layout>

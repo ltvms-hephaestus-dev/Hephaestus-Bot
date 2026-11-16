@@ -1,0 +1,25 @@
+id: voice
+order: 2
+title: "LLMs from code"
+part: Voice
+question: "How do I get an answer out of a model from my own program?"
+summary: >-
+  A model is a web service. You send it a list of messages and get text back. This
+  world covers the request, the roles in a conversation, why you resend history,
+  streaming, what it costs and how to get JSON you can trust.
+# Not written yet. Move a level out of this list when you add its file.
+planned:
+  - title: "One HTTP request"
+    concepts: ["API key", "model", "messages", "max tokens"]
+  - title: "Who is speaking"
+    concepts: ["system prompt", "user and assistant roles"]
+  - title: "Nothing is remembered"
+    concepts: ["stateless API", "resending history"]
+  - title: "Word by word"
+    concepts: ["streaming", "server-sent events"]
+  - title: "Counting the cost"
+    concepts: ["input and output tokens", "latency", "prompt caching"]
+  - title: "Saying what you mean"
+    concepts: ["clear instructions", "examples", "prompt structure"]
+  - title: "Answers your code can read"
+    concepts: ["structured output", "JSON schema", "validation"]

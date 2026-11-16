@@ -1,0 +1,9 @@
+id: brain
+order: 1
+title: How LLMs work
+part: Brain
+question: What is this thing actually doing when it "answers" me?
+summary: >-
+  Before any API, prompt or agent, there is one idea: a language model predicts the
+  next piece of text. Seven levels take that idea apart, from tokens to the limits
+  that explain why models forget and make things up.

@@ -1,0 +1,25 @@
+id: universal-plug
+order: 4
+title: "Model Context Protocol"
+part: Universal plug
+question: "Do I have to rewrite every integration for every AI app?"
+summary: >-
+  MCP is an open protocol that lets any AI application talk to any tool or data source
+  through one interface. This world follows the current revision of the specification,
+  2026-07-28, which is stateless.
+# Not written yet. Move a level out of this list when you add its file.
+planned:
+  - title: "Too many adapters"
+    concepts: ["the N×M problem", "open standard"]
+  - title: "Host, client, server"
+    concepts: ["MCP architecture", "who talks to whom"]
+  - title: "Three things a server offers"
+    concepts: ["tools", "resources", "prompts"]
+  - title: "Reading the wire"
+    concepts: ["JSON-RPC", "tools/list", "tools/call"]
+  - title: "How messages travel"
+    concepts: ["stdio", "Streamable HTTP", "stateless requests"]
+  - title: "Write a server"
+    concepts: ["MCP SDK", "tool handler", "input schema"]
+  - title: "Trust and permission"
+    concepts: ["authorization", "OAuth", "tool poisoning"]

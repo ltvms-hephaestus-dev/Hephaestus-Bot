@@ -1,0 +1,78 @@
+id: tokens
+title: Chopped into tokens
+concepts:
+  - tokens
+  - tokenizer
+  - vocabulary
+  - tokens are not words
+
+lesson: |
+  The model never sees letters or words. Before your text reaches it, a
+  **tokenizer** chops it into **tokens** and swaps each one for a number.
+
+  A token is a common chunk of text. Short everyday words are usually one token.
+  Longer or rarer words get split: `unbelievable` becomes `un`, `bel`, `ievable`.
+  The space before a word normally belongs to the token, so ` robot` and `robot`
+  are different tokens.
+
+  This matters to you as a developer because everything is counted in tokens:
+  how much text a model can read, how much it can write, and what you pay.
+
+  The board runs a real tokenizer in your browser. Type and watch the pieces.
+
+goal: |
+  The robot's ear holds **exactly 4 tokens**. Write any greeting that fits.
+  There are many right answers.
+
+scene:
+  type: tokens
+  bind: { text: text }
+  target: 4
+
+challenge:
+  type: fill
+  code:
+    python: |
+      greeting = "{{text}}"
+      tokens = tokenizer.encode(greeting)
+
+      assert len(tokens) == 4
+    typescript: |
+      const greeting = "{{text}}";
+      const tokens = tokenizer.encode(greeting);
+
+      console.assert(tokens.length === 4);
+  blanks:
+    text:
+      placeholder: type a greeting
+      width: 24
+      caseSensitive: true
+      accept: { tokenCount: { eq: 4 } }
+      feedback: Count the coloured pieces on the board. You need exactly 4.
+
+hints:
+  - Watch the counter on the board change as you type. Punctuation counts too.
+  - Common short words are one token each. A comma or an exclamation mark is one more.
+  - "`Good morning, robot` is four tokens: `Good`, ` morning`, `,` and ` robot`."
+
+success: |
+  Try a long made-up word and watch it shatter into pieces: rare text costs more
+  tokens. A useful rule of thumb for English is about four characters per token,
+  but only the tokenizer knows for sure, and every model family has its own.
+
+links:
+  - title: Tokenizer playground
+    url: https://platform.openai.com/tokenizer
+    kind: tool
+    note: Paste any text and see how different models split it.
+  - title: minbpe
+    url: https://github.com/karpathy/minbpe
+    kind: code
+    note: The byte-pair encoding algorithm in a few hundred readable lines.
+  - title: gpt-tokenizer
+    url: https://github.com/niieani/gpt-tokenizer
+    kind: code
+    note: The library this level uses to tokenize in your browser.
+
+solution: { text: "Good morning, robot" }
+wrong: { text: "Hi" }

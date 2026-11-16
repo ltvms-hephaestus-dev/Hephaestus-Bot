@@ -1,0 +1,87 @@
+id: attention
+title: What "it" means
+concepts:
+  - attention
+  - context changes meaning
+  - transformer
+
+lesson: |
+  An embedding gives each token one fixed meaning. But meaning depends on the
+  neighbours: "bank" in "river bank" is not "bank" in "bank account".
+
+  **Attention** fixes that. For every token, the model asks: *which other tokens
+  in this text should I look at to understand this one?* It then mixes in
+  information from those tokens, weighted by how relevant each is. After
+  attention, the vector for "bank" is no longer generic. It carries its context.
+
+  A **transformer**, the design behind every modern LLM, is mostly this step
+  repeated: dozens of layers, each letting every token look at every other
+  token. Stack enough of them and the model can track who did what to whom across
+  pages of text.
+
+  Pronouns show it best. To use the word "it", you first have to work out what
+  "it" refers to.
+
+goal: |
+  Read the sentence on the board. Which word does **it** pay the most attention
+  to? Make your guess, then check to reveal the real weights.
+
+scene:
+  type: attention
+  focus: 8
+  bind: { guess: word }
+  tokens: [The, trophy, "didn't", fit, in, the, suitcase, because, it, was, too, big]
+  weights: [0.02, 0.61, 0.02, 0.06, 0.01, 0.01, 0.13, 0.02, 0, 0.02, 0.03, 0.07]
+  alt:
+    label: Change "big" to "small" and look again
+    back: Change it back to "big"
+    tokens: [The, trophy, "didn't", fit, in, the, suitcase, because, it, was, too, small]
+    weights: [0.01, 0.12, 0.02, 0.06, 0.02, 0.02, 0.63, 0.02, 0, 0.02, 0.03, 0.05]
+
+challenge:
+  type: fill
+  code:
+    python: |
+      # board.sentence is the sentence shown on the board
+      weights = attention(board.sentence, "it")
+
+      assert max(weights, key=weights.get) == "{{word}}"
+    typescript: |
+      // board.sentence is the sentence shown on the board
+      const weights = attention(board.sentence, "it");
+
+      console.assert(strongest(weights) === "{{word}}");
+  blanks:
+    word:
+      placeholder: word
+      width: 9
+      accept: { equals: trophy }
+      feedback: Ask yourself what was too big to fit.
+
+hints:
+  - Two things in the sentence could be "it". Only one of them can be too big to fit.
+  - If the suitcase were too big, the trophy would fit. So the thing that is too big is the other one.
+  - The answer is `trophy`.
+
+success: |
+  Now press the button under the sentence. Change one word, "big" to "small", and
+  the attention jumps to **suitcase**. Nothing told the model a grammar rule. It
+  learned from text that what is too small is the container. That is context
+  doing its job.
+
+links:
+  - title: The Illustrated Transformer
+    url: https://jalammar.github.io/illustrated-transformer/
+    kind: article
+    note: The classic picture-by-picture walkthrough of attention.
+  - title: LLM Visualization
+    url: https://bbycroft.net/llm
+    kind: tool
+    note: A 3D model you can step through, one calculation at a time.
+  - title: Attention Is All You Need
+    url: https://arxiv.org/abs/1706.03762
+    kind: paper
+    note: The 2017 paper that introduced the transformer.
+
+solution: { word: trophy }
+wrong: { word: suitcase }

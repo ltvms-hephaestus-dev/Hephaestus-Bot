@@ -1,0 +1,18 @@
+id: graduation
+order: 7
+title: "Capstone: real code"
+part: Graduation
+question: "How does all of it fit together on a real codebase?"
+summary: >-
+  One coding agent, followed from the moment you type a request to the moment the
+  tests pass. Every part you forged shows up in the trace.
+# Not written yet. Move a level out of this list when you add its file.
+planned:
+  - title: "Inside a coding agent"
+    concepts: ["read, edit, run", "harness", "tools for code"]
+  - title: "One request, end to end"
+    concepts: ["prompt to tool call to MCP to result"]
+  - title: "Fix a broken run"
+    concepts: ["trace reading", "root cause"]
+  - title: "The simplest thing that works"
+    concepts: ["architecture choice", "when not to use an agent"]

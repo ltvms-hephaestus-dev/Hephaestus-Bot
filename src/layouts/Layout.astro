@@ -1,0 +1,93 @@
+---
+import '@fontsource-variable/big-shoulders';
+import '@fontsource-variable/atkinson-hyperlegible-next';
+import '@fontsource-variable/jetbrains-mono';
+import '../styles/global.css';
+import { SITE } from '../config';
+import { url } from '../lib/url';
+import { PROGRESS_KEY } from '../lib/progress';
+
+interface Props {
+  title?: string;
+  description?: string;
+  wide?: boolean;
+}
+const { title, description = 'A free game that teaches developers how LLMs, MCP and AI agents work, by forging a robot one part at a time.' } = Astro.props;
+const pageTitle = title ? `${title} | ${SITE.name}` : `${SITE.name}: ${SITE.tagline}`;
+const here = Astro.url.pathname;
+const nav = [
+  { href: url('/'), label: 'Worlds', match: /\/(worlds|play)\// },
+  { href: url('map/'), label: 'Topic map', match: /\/map\// },
+  { href: url('beyond/'), label: 'Beyond the game', match: /\/beyond\// },
+  { href: url('forge/'), label: 'Lesson forge', match: /\/forge\// },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta name="theme-color" content="#1f262a" />
+    <link rel="icon" href={url('favicon.svg')} type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="visually-hidden" href="#main">Skip to content</a>
+    <header class="site-head">
+      <div class="wrap site-head__in">
+        <a class="brand" href={url('/')}><span class="brand__mark" aria-hidden="true"></span>{SITE.name}</a>
+        <nav class="site-nav" aria-label="Site">
+          {nav.map((n) => <a href={n.href} aria-current={n.match.test(here) ? 'page' : undefined}>{n.label}</a>)}
+          <a href={`https://github.com/${SITE.repo}`}>GitHub</a>
+        </nav>
+      </div>
+    </header>
+    <main id="main" class="wrap">
+      <slot />
+    </main>
+    <footer class="site-foot">
+      <div class="wrap">
+        <p>
+          {SITE.name} is free and open source. Code is MIT licensed; lessons are CC BY 4.0.
+          Your progress is saved in this browser only: no account, no tracking.
+        </p>
+        <p>
+          <a href={url('forge/')}>Write a lesson</a>, <a href={`https://github.com/${SITE.repo}/issues`}>report a mistake</a>, or read the{' '}
+          <a href={url('api/index.json')}>lesson data as JSON</a>.
+        </p>
+      </div>
+    </footer>
+
+    <script is:inline define:vars={{ KEY: PROGRESS_KEY }}>
+      // Mark solved levels and fill in progress counts on static pages.
+      function paint() {
+        var solved = {};
+        try { solved = (JSON.parse(localStorage.getItem(KEY) || '{}').solved) || {}; } catch (e) {}
+        document.querySelectorAll('[data-level]').forEach(function (el) {
+          var done = !!solved[el.getAttribute('data-level')];
+          el.classList.toggle('is-solved', done);
+          var s = el.querySelector('.state');
+          if (s) s.textContent = done ? '✓ solved' : 'not solved yet';
+        });
+        document.querySelectorAll('[data-count]').forEach(function (el) {
+          var ids = (el.getAttribute('data-count') || '').split(' ').filter(Boolean);
+          var n = ids.filter(function (id) { return solved[id]; }).length;
+          if (ids.length) el.textContent = n + ' of ' + ids.length + ' solved';
+        });
+        document.querySelectorAll('[data-continue]').forEach(function (el) {
+          var all = JSON.parse(el.getAttribute('data-continue'));
+          var next = all.find(function (l) { return !solved[l.id]; });
+          var any = all.some(function (l) { return solved[l.id]; });
+          if (next && any) { el.href = next.href; el.textContent = 'Continue: ' + next.title; }
+          else if (!next && all.length) { el.textContent = 'Replay from level 1'; }
+        });
+      }
+      paint();
+      window.addEventListener('hb:progress', paint);
+    </script>
+  </body>
+</html>

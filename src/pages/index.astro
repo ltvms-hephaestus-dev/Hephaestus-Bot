@@ -1,0 +1,87 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Robot } from '../components/Robot';
+import { loadWorlds } from '../lib/content';
+import { allLevels, fullId, worldHref } from '../lib/site';
+import { temperStyle } from '../lib/temper';
+import { url } from '../lib/url';
+
+const worlds = loadWorlds();
+const levels = allLevels(worlds);
+const first = levels[0];
+---
+
+<Layout>
+  <section class="hero">
+    <div>
+      <h1>Forge a robot. Understand AI.</h1>
+      <p class="hero__lede">
+        A game for developers. Type a few characters of real code, watch the robot react, and work your way from
+        “how does it guess the next word?” to building agents.
+      </p>
+      <div class="hero__cta">
+        {first && (
+          <a class="btn btn--primary" href={first.href} data-continue={JSON.stringify(levels)}>Start level 1</a>
+        )}
+        <span class="muted">Free. No account. Python or TypeScript.</span>
+      </div>
+    </div>
+    <div class="hero__robot" style={temperStyle(2)}>
+      <Robot parts={7} mood="happy" label="The finished robot: brain, voice, hands, plug, legs, gauge and a spark" />
+    </div>
+  </section>
+
+  <nav class="temperbar" aria-label="Worlds">
+    {worlds.map((w) => (
+      <a href={worldHref(w)} style={temperStyle(w.order)}>
+        {w.part}
+        <small>World {w.order}</small>
+      </a>
+    ))}
+  </nav>
+  <p class="temperbar__caption">
+    Steel changes colour as a smith tempers it, from pale straw to blue. Each world adds one part to the robot and
+    takes the next colour on the bar.
+  </p>
+
+  <ol class="worlds">
+    {worlds.map((w) => (
+      <li class="world-row" style={temperStyle(w.order)}>
+        <div class="world-row__no" aria-hidden="true">{w.order}</div>
+        <div>
+          <h2><a href={worldHref(w)}>{w.title}</a></h2>
+          <p class="world-row__q">“{w.question}”</p>
+          <p>{w.summary}</p>
+        </div>
+        <div class="world-row__meta">
+          {w.levels.length > 0 ? (
+            <>
+              <div>{w.levels.length} levels</div>
+              <div data-count={w.levels.map((l) => fullId(w, l)).join(' ')}></div>
+            </>
+          ) : (
+            <div>Being forged<br />{w.planned?.length ?? 0} levels planned</div>
+          )}
+        </div>
+      </li>
+    ))}
+  </ol>
+
+  <section class="how" aria-label="How a level works">
+    <div>
+      <h3>Read one idea</h3>
+      <p>Each level explains a single concept in under a minute, with no maths you have to take on trust.</p>
+    </div>
+    <div>
+      <h3>Fill in the code</h3>
+      <p>Complete a line of Python or TypeScript. The board changes as you type, before you even check.</p>
+    </div>
+    <div>
+      <h3>Go as deep as you like</h3>
+      <p>
+        Every level links to the best primary sources and sits on a <a href={url('map/')}>topic map</a> of the whole
+        field.
+      </p>
+    </div>
+  </section>
+</Layout>

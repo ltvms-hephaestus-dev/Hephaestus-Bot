@@ -1,0 +1,233 @@
+# Topics the game leaves out on purpose, with the best places to learn them.
+# Add a topic or a link here and it appears on the "Beyond the game" page.
+verified: "2026-11-16"
+intro: >-
+  The game simulates everything in your browser and stops short of a few subjects
+  on purpose. These are the places to go next, picked for developers and ordered so
+  each section builds on the one before.
+
+sections:
+  - id: real-models
+    title: Call a real model
+    why: >-
+      Every level here is simulated, so nothing costs money and nothing needs a key.
+      The next step is a real request. World 2 teaches the shape of it; these links
+      get you an actual answer back.
+    topics:
+      - title: Your first API call
+        about: >-
+          Create a key, send one message, read the reply. Do this once with any
+          provider and the others will look familiar.
+        links:
+          - title: Get started with Claude
+            url: https://platform.claude.com/docs/en/get-started
+            kind: docs
+          - title: Gemini API documentation
+            url: https://ai.google.dev/gemini-api/docs
+            kind: docs
+          - title: OpenRouter quickstart
+            url: https://openrouter.ai/docs/quickstart
+            kind: docs
+            note: One key, many providers. Handy for comparing models.
+      - title: Run a model on your own machine
+        about: >-
+          Small open models run on a laptop. It is free, private, and the fastest way
+          to feel the effect of temperature, context size and model size.
+        links:
+          - title: Ollama
+            url: https://ollama.com
+            kind: tool
+          - title: Models on Hugging Face
+            url: https://huggingface.co/models
+            kind: tool
+      - title: Tools and structured output, for real
+        about: The provider documentation for the two features Worlds 2 and 3 simulate.
+        links:
+          - title: Tool use with Claude
+            url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+            kind: docs
+          - title: Function calling with Gemini
+            url: https://ai.google.dev/gemini-api/docs/function-calling
+            kind: docs
+          - title: Structured output with Gemini
+            url: https://ai.google.dev/gemini-api/docs/structured-output
+            kind: docs
+
+  - id: training
+    title: How models are trained
+    why: >-
+      World 1 explains training in one level and no maths. You do not need more to
+      build with models, but writing a tiny one yourself removes the last of the
+      mystery.
+    topics:
+      - title: Neural networks from nothing
+        about: Backpropagation and gradient descent, built up from a blank file.
+        links:
+          - title: "Neural Networks: Zero to Hero"
+            url: https://karpathy.ai/zero-to-hero.html
+            kind: course
+            note: Roughly twenty hours of video. The standard recommendation, for good reason.
+          - title: Neural networks, by 3Blue1Brown
+            url: https://www.3blue1brown.com/topics/neural-networks
+            kind: video
+            note: The intuition, animated. Watch before the course above.
+          - title: Practical Deep Learning for Coders
+            url: https://course.fast.ai/
+            kind: course
+      - title: Build a GPT yourself
+        about: A working language model in a few hundred lines you can read in an evening.
+        links:
+          - title: "Let's build GPT: from scratch, in code, spelled out"
+            url: https://www.youtube.com/watch?v=kCc8FmEb1nY
+            kind: video
+          - title: nanoGPT
+            url: https://github.com/karpathy/nanoGPT
+            kind: code
+          - title: LLMs from scratch
+            url: https://github.com/rasbt/LLMs-from-scratch
+            kind: code
+            note: Notebook-by-notebook companion to the book of the same name.
+      - title: The source
+        about: The paper that introduced the transformer. Short, and readable after World 1.
+        links:
+          - title: Attention Is All You Need
+            url: https://arxiv.org/abs/1706.03762
+            kind: paper
+
+  - id: fine-tuning
+    title: Fine-tuning
+    why: >-
+      Fine-tuning changes a model's weights with your own examples. It is rarely the
+      first thing to try: a better prompt, retrieval or tools usually get there
+      sooner and cheaper. Learn it so you can tell when it is the right call.
+    topics:
+      - title: The whole picture
+        about: A free course from loading a model to training and sharing one.
+        links:
+          - title: Hugging Face LLM Course
+            url: https://huggingface.co/learn/llm-course
+            kind: course
+      - title: LoRA and efficient fine-tuning
+        about: >-
+          Train a small add-on instead of the whole model. This is how most
+          fine-tuning is done in practice.
+        links:
+          - title: "LoRA (Low-Rank Adaptation), LLM Course chapter"
+            url: https://huggingface.co/learn/llm-course/en/chapter11/4
+            kind: course
+          - title: PEFT library documentation
+            url: https://huggingface.co/docs/peft
+            kind: docs
+          - title: "LoRA: Low-Rank Adaptation of Large Language Models"
+            url: https://arxiv.org/abs/2106.09685
+            kind: paper
+
+  - id: frameworks
+    title: Frameworks and SDKs
+    why: >-
+      The game teaches the raw loop: messages in, tool calls out, repeat. Frameworks
+      wrap that loop. Once you can write it by hand you can judge any of them in an
+      afternoon, and you will know what is happening when one misbehaves.
+    topics:
+      - title: Read this before picking one
+        about: Why simple, composable patterns beat heavy abstractions, from a team that ships agents.
+        links:
+          - title: Building effective agents
+            url: https://www.anthropic.com/engineering/building-effective-agents
+            kind: article
+      - title: Agent SDKs and frameworks
+        about: >-
+          Pick by language and by how much the tool decides for you. Provider SDKs are
+          the thinnest; graph frameworks add durable state and resumable runs.
+        links:
+          - title: OpenAI Agents SDK quickstart
+            url: https://developers.openai.com/api/docs/guides/agents/quickstart
+            kind: docs
+          - title: Claude Code overview
+            url: https://code.claude.com/docs/en/overview
+            kind: docs
+            note: A coding agent you can script and extend; useful to study as a finished harness.
+          - title: LangGraph
+            url: https://docs.langchain.com/langgraph
+            kind: docs
+            note: Python and TypeScript. Agents as graphs with saved state.
+          - title: AI SDK
+            url: https://ai-sdk.dev
+            kind: docs
+            note: TypeScript. Streaming, tools and agent loops for web apps.
+          - title: Pydantic AI
+            url: https://ai.pydantic.dev
+            kind: docs
+            note: Python. Typed agents with validated outputs.
+          - title: LlamaIndex
+            url: https://www.llamaindex.ai
+            kind: docs
+            note: Strongest where documents and retrieval are the hard part.
+      - title: MCP, straight from the source
+        about: The specification and the official SDKs that World 4 is based on.
+        links:
+          - title: MCP specification, revision 2026-07-28
+            url: https://modelcontextprotocol.io/specification/2026-07-28
+            kind: docs
+          - title: What changed in 2026-07-28
+            url: https://blog.modelcontextprotocol.io/posts/2026-07-28/
+            kind: article
+          - title: MCP TypeScript SDK
+            url: https://github.com/modelcontextprotocol/typescript-sdk
+            kind: code
+          - title: MCP Python SDK
+            url: https://github.com/modelcontextprotocol/python-sdk
+            kind: code
+
+  - id: courses
+    title: Longer courses
+    why: >-
+      When you want weeks of structured practice with real models, graded
+      exercises and a community, these are free and maintained.
+    topics:
+      - title: Agents and MCP, hands on
+        about: Each one ends with something you built and can show.
+        links:
+          - title: Hugging Face Agents Course
+            url: https://huggingface.co/learn/agents-course
+            kind: course
+          - title: Hugging Face MCP Course
+            url: https://huggingface.co/learn/mcp-course/en/unit0/introduction
+            kind: course
+          - title: AI Agents for Beginners
+            url: https://github.com/microsoft/ai-agents-for-beginners
+            kind: course
+            note: Lessons with code on GitHub. The default samples expect an Azure account.
+
+  - id: safety-and-quality
+    title: Security and evaluation in depth
+    why: >-
+      World 6 introduces both. If you are putting an agent in front of real users,
+      go further than an introduction.
+    topics:
+      - title: Security
+        about: The shared vocabulary for what can go wrong, and the attack you will meet first.
+        links:
+          - title: OWASP Top 10 for LLM Applications
+            url: https://genai.owasp.org/llm-top-10/
+            kind: docs
+          - title: Prompt injection, a running series
+            url: https://simonwillison.net/series/prompt-injection/
+            kind: article
+      - title: Evaluation
+        about: How to test a system whose output changes from run to run.
+        links:
+          - title: Your AI product needs evals
+            url: https://hamel.dev/blog/posts/evals/
+            kind: article
+
+notCovered:
+  - title: Accounts, leaderboards and analytics
+    about: >-
+      These are features of a website, not AI topics, so there is nothing to learn
+      here. The game keeps your progress in your own browser and does not track you.
+  - title: Other languages
+    about: >-
+      The game is in English for now. Lessons are plain text files, so a
+      translation is a set of files anyone can contribute. See CONTRIBUTING in the
+      repository.

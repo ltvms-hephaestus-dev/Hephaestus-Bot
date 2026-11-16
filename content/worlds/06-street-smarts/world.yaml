@@ -1,0 +1,23 @@
+id: street-smarts
+order: 6
+title: "Agentic systems in production"
+part: Street smarts
+question: "How do I trust this with real users and real data?"
+summary: >-
+  Shipping an agent is mostly the work around it: splitting jobs across agents,
+  testing something that is not deterministic, defending against hostile input,
+  keeping a person in control, and watching cost.
+# Not written yet. Move a level out of this list when you add its file.
+planned:
+  - title: "Many hands"
+    concepts: ["subagents", "delegation", "isolated context"]
+  - title: "Testing the untestable"
+    concepts: ["evals", "graders", "regression sets"]
+  - title: "Hostile text"
+    concepts: ["prompt injection", "guardrails", "least privilege"]
+  - title: "A person in the loop"
+    concepts: ["approvals", "permissions", "irreversible actions"]
+  - title: "Reading a trace"
+    concepts: ["observability", "spans", "debugging runs"]
+  - title: "Paying for it"
+    concepts: ["cost", "latency", "caching", "model choice"]

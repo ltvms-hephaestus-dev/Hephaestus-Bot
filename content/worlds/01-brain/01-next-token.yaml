@@ -1,0 +1,82 @@
+id: next-token
+title: The prediction machine
+concepts:
+  - next-token prediction
+  - probability distribution
+  - one token at a time
+
+lesson: |
+  A large language model (LLM) does one thing: given some text, it scores every
+  possible **next piece of text** and says how likely each one is.
+
+  That is all. There is no database of answers inside and no plan for the whole
+  sentence. The model looks at the text so far, produces a list of probabilities,
+  one piece is chosen, and the process repeats with the longer text. A paragraph
+  is hundreds of those small steps in a row.
+
+  The board shows the robot's brain after reading a prompt. Each bar is one
+  candidate for the next word and how likely the model thinks it is.
+
+goal: |
+  The robot has read the prompt on the board. Which word will it say next if it
+  always picks the **most likely** one? Complete the test.
+
+scene:
+  type: bars
+  prompt: The blacksmith struck the hot iron with his
+  bind: { guess: word }
+  tokens:
+    - [hammer, 0.71]
+    - [tongs, 0.09]
+    - [hand, 0.07]
+    - [fist, 0.05]
+    - [anvil, 0.04]
+    - [sword, 0.03]
+    - [banana, 0.01]
+
+challenge:
+  type: fill
+  code:
+    python: |
+      # board.prompt is the text shown on the board
+      next_word = robot.most_likely_next(board.prompt)
+
+      assert next_word == "{{word}}"
+    typescript: |
+      // board.prompt is the text shown on the board
+      const nextWord = robot.mostLikelyNext(board.prompt);
+
+      console.assert(nextWord === "{{word}}");
+  blanks:
+    word:
+      placeholder: word
+      width: 8
+      accept: { equals: hammer }
+      feedback: Look at the board. Which bar is the longest?
+
+hints:
+  - The model gives every candidate a probability. "Most likely" means the highest one.
+  - Read the bars on the board. One of them is far longer than the rest.
+  - The answer is `hammer`.
+
+success: |
+  The model did not *look up* "hammer". It gave it 71% and gave "banana" 1%: unlikely,
+  but never impossible. Everything an LLM writes, from poems to code, comes from
+  repeating this one step.
+
+links:
+  - title: Transformer Explainer
+    url: https://poloclub.github.io/transformer-explainer/
+    kind: tool
+    note: Type a prompt and watch a real small model produce next-word probabilities.
+  - title: Neural networks, by 3Blue1Brown
+    url: https://www.3blue1brown.com/topics/neural-networks
+    kind: video
+    note: The clearest animated explanation of what happens inside.
+  - title: "Neural Networks: Zero to Hero"
+    url: https://karpathy.ai/zero-to-hero.html
+    kind: course
+    note: Build a next-token predictor yourself, from an empty file.
+
+solution: { word: hammer }
+wrong: { word: banana }

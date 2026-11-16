@@ -1,0 +1,28 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Forge from '../../components/Forge';
+import { SITE } from '../../config';
+import { loadWorlds } from '../../lib/content';
+import { SCENE_NAMES } from '../../scenes';
+import { url } from '../../lib/url';
+
+const worlds = loadWorlds().map((w) => ({ id: w.id, dir: w.dir, order: w.order, title: w.title, next: w.levels.length + 1 }));
+---
+
+<Layout title="Lesson forge" description="Write a new lesson in your browser, play it at once, and propose it for the game.">
+  <header class="page-head">
+    <h1>Lesson forge</h1>
+    <p class="prose">
+      A lesson is one text file. Write it on the left and it becomes playable on the right as you type. Save it in this
+      browser, download it, share it as a link, or propose it for the game. Nothing here needs an account until the
+      moment you propose a lesson on GitHub.
+    </p>
+    <p class="muted">
+      Boards you can use: {SCENE_NAMES.join(', ')}. The full format is in the{' '}
+      <a href={`https://github.com/${SITE.repo}/blob/${SITE.branch}/CONTRIBUTING.md`}>contributing guide</a> and as a{' '}
+      <a href={url('api/schema.json')}>JSON Schema</a>. Existing lessons are available as{' '}
+      <a href={url('api/index.json')}>JSON</a> to copy from.
+    </p>
+  </header>
+  <Forge client:only="preact" worlds={worlds} repo={SITE.repo} branch={SITE.branch} playUrl={url('forge/play/')} />
+</Layout>

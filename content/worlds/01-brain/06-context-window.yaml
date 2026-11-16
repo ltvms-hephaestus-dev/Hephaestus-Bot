@@ -1,0 +1,90 @@
+id: context-window
+title: The edge of memory
+concepts:
+  - context window
+  - models have no memory
+  - token limits
+
+lesson: |
+  Everything the model can use to predict the next token has to be in front of it
+  right now. That space is the **context window**, and it has a fixed size,
+  measured in tokens.
+
+  This has a consequence people find surprising: **the model has no memory.** It
+  does not remember your last message. A chat feels continuous only because the
+  application sends the whole conversation again on every turn, and the model
+  reads it from the top each time.
+
+  So when a conversation grows past the window, something has to be left out.
+  The simplest strategy drops the oldest messages. Whatever was in them is, for
+  the model, gone.
+
+  Modern windows are large, hundreds of thousands of tokens or more, but they
+  are never free: every token in the window is one you pay for and wait for.
+
+goal: |
+  The last message asks the robot for the user's name, which was given in the
+  first message. Windows come in three sizes: `64`, `128` and `256` tokens.
+  Pick the **smallest** one that still lets the robot answer.
+
+scene:
+  type: context
+  bind: { window: size }
+  remembered: Your name is Ada.
+  forgotten: I am sorry, I do not know your name.
+  messages:
+    - { role: user, text: "Hi! My name is Ada and I am building a forge.", tokens: 14, key: true }
+    - { role: assistant, text: "Nice to meet you, Ada. What will you forge first?", tokens: 13 }
+    - { role: user, text: "A robot. Here is my parts list: a steel frame, two arms, a speaker, a socket…", tokens: 38 }
+    - { role: assistant, text: "A solid list. Start with the frame, because every other part bolts onto it…", tokens: 30 }
+    - { role: user, text: "Thanks! By the way, what is my name?", tokens: 11 }
+
+challenge:
+  type: fill
+  code:
+    python: |
+      # Sizes in stock: 64, 128, 256
+      robot = Robot(context_window={{size}})
+
+      # conversation is the five messages on the board
+      robot.chat(conversation)
+    typescript: |
+      // Sizes in stock: 64, 128, 256
+      const robot = new Robot({ contextWindow: {{size}} });
+
+      // conversation is the five messages on the board
+      await robot.chat(conversation);
+  blanks:
+    size:
+      placeholder: size
+      width: 5
+      accept: { equals: "128" }
+      feedback: Either the first message falls outside the window, or you are paying for space you do not need.
+
+hints:
+  - The window is filled from the newest message backwards. Add up the token counts on the board.
+  - The whole conversation is 106 tokens. A window of 64 only reaches back two messages.
+  - "`128` fits all 106 tokens. `256` works too, but it is not the smallest."
+
+success: |
+  With 64 tokens the robot did not *forget* Ada. It never saw her message at all.
+  Deciding what goes into the window (which messages, which documents, which tool
+  results) is one of the main jobs of an AI developer. It has a name, context
+  engineering, and a whole level in World 5.
+
+links:
+  - title: Effective context engineering for AI agents
+    url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    kind: article
+    note: Why the window is a budget, and how to spend it.
+  - title: Intro to Large Language Models
+    url: https://www.youtube.com/watch?v=zjkBMFhNj_g
+    kind: video
+    note: One hour that places the context window in the bigger picture.
+  - title: Tokenizer playground
+    url: https://platform.openai.com/tokenizer
+    kind: tool
+    note: Measure how many tokens your own text takes.
+
+solution: { size: "128" }
+wrong: { size: "64" }

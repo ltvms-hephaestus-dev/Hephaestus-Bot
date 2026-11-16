@@ -1,0 +1,84 @@
+id: training-and-limits
+title: Where the knowledge comes from
+concepts:
+  - training vs inference
+  - weights
+  - knowledge cutoff
+  - hallucination
+
+lesson: |
+  How did the model learn that "hammer" follows "struck the hot iron with his"?
+
+  **Training.** The model starts with billions of random numbers called
+  **weights**. It is shown text with the next token hidden, makes a guess, gets
+  told the right answer, and every weight is nudged a little so that the guess
+  would have been better. Repeat that across a large slice of the written
+  internet and the weights end up encoding grammar, facts and reasoning patterns.
+
+  Then training stops and the weights are **frozen**. From that day the model
+  learns nothing new. That date is its **knowledge cutoff**.
+
+  **Inference** is what happens when you use it: your prompt goes in, the frozen
+  weights turn it into next-token probabilities, one token is picked.
+
+  Here is the catch. The model *always* produces probabilities, even for
+  something it never saw. Ask about an event after its cutoff and it still writes
+  fluent, confident text. It is not lying. It is predicting what an answer would
+  look like. That is called a **hallucination**.
+
+goal: |
+  Put the life of a model in order, from raw text to the token on your screen.
+
+scene:
+  type: bars
+  prompt: The winner of the 2041 Forge Cup was
+  say: I have never seen a single word about 2041. I still have an answer for you.
+  note: Every bar here is made up, and the model sounds exactly as sure as when it is right.
+  tokens:
+    - [Hephaestus, 0.44]
+    - [Vulcan, 0.27]
+    - [Wayland, 0.16]
+    - [Ilmarinen, 0.08]
+    - [nobody, 0.05]
+
+challenge:
+  type: order
+  items:
+    - { id: collect, text: Collect a huge amount of text }
+    - { id: train, text: "Training: guess the hidden next token, measure the error, nudge the weights. Repeat billions of times" }
+    - { id: freeze, text: "Freeze the weights. Nothing after this date is known: the knowledge cutoff" }
+    - { id: prompt, text: "Inference begins: your prompt arrives and is split into tokens" }
+    - { id: predict, text: The frozen weights turn those tokens into probabilities for the next token }
+    - { id: sample, text: "One token is picked, added to the text, and the last two steps repeat" }
+
+hints:
+  - Two phases. Everything about learning comes first; everything about your prompt comes after.
+  - The weights are frozen between the two phases. Tokenizing your prompt is the first step of the second phase.
+  - "Collect, train, freeze, then: prompt arrives, predict, pick."
+
+success: |
+  You now have the whole machine: text becomes **tokens**, tokens become
+  **embeddings**, **attention** mixes in context, the model outputs
+  **probabilities**, **sampling** picks one, all inside a fixed **context
+  window**, using weights frozen at a **cutoff**.
+
+  Every technique in the rest of this game exists to work with those facts.
+  Giving the model fresh knowledge and tools is how you deal with the cutoff and
+  with hallucination. First, though, the robot needs a voice: World 2 is about
+  calling a model from your own code.
+
+links:
+  - title: "Let's build GPT: from scratch, in code, spelled out"
+    url: https://www.youtube.com/watch?v=kCc8FmEb1nY
+    kind: video
+    note: Watch the training loop being written line by line.
+  - title: nanoGPT
+    url: https://github.com/karpathy/nanoGPT
+    kind: code
+    note: A complete, small training and inference codebase to read.
+  - title: Intro to Large Language Models
+    url: https://www.youtube.com/watch?v=zjkBMFhNj_g
+    kind: video
+    note: Training, inference and limits explained for a general audience.
+
+wrong: [prompt, collect, train, freeze, predict, sample]

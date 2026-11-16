@@ -1,0 +1,93 @@
+id: sampling
+title: Rolling the dice
+concepts:
+  - sampling
+  - temperature
+  - top-p
+  - why answers vary
+
+lesson: |
+  The model hands back probabilities. Something still has to **pick** one token.
+  That step is called sampling, and you control it.
+
+  Always taking the top token gives the same answer every time. Usually the
+  picker rolls weighted dice instead, so a 40% token wins about four times in
+  ten. That is why the same prompt can give different answers.
+
+  **Temperature** reshapes the odds before the roll:
+
+  - `0`: no dice. Always the most likely token. Repeatable.
+  - around `1`: the model's own odds.
+  - higher: flatter odds, so unlikely tokens win more often. More surprising,
+    and more often wrong.
+
+  **top_p** is a second dial. It throws away the unlikely tail before rolling:
+  `top_p = 0.9` keeps only the most likely tokens that together add up to 90%.
+
+goal: |
+  The robot is going to answer customer questions, so it must give the **same
+  answer every time**. Set the temperature that removes the dice.
+
+scene:
+  type: bars
+  prompt: My favourite thing to forge is a
+  sample: true
+  explore: [topP]
+  bind: { temperature: temp }
+  tokens:
+    - [sword, 0.38]
+    - [horseshoe, 0.24]
+    - [key, 0.15]
+    - [bell, 0.1]
+    - [spoon, 0.07]
+    - [cloud, 0.04]
+    - [sadness, 0.02]
+
+challenge:
+  type: fill
+  code:
+    python: |
+      prompt = "My favourite thing to forge is a"
+      reply = robot.complete(
+          prompt,
+          temperature={{temp}},
+      )
+    typescript: |
+      const prompt = "My favourite thing to forge is a";
+      const reply = await robot.complete(prompt, {
+        temperature: {{temp}},
+      });
+  blanks:
+    temp:
+      placeholder: "0 to 2"
+      width: 6
+      accept: { number: { eq: 0 } }
+      feedback: Look at the ten answers on the board. They are not all the same yet.
+
+hints:
+  - Try `2`, then `1`, then `0.3`, and watch the ten sample answers under the bars.
+  - Lower temperature makes the top bar grow. You want it to reach 100%.
+  - Set temperature to `0`.
+
+success: |
+  At temperature 0 the top token wins every time. Use low values for extraction,
+  classification and code; higher ones for brainstorming. Before you move on, set
+  the temperature back to `1.5` and drag the top_p slider down: the nonsense tail
+  ("cloud", "sadness") gets cut while the sensible answers keep their variety.
+
+links:
+  - title: How to generate text
+    url: https://huggingface.co/blog/how-to-generate
+    kind: article
+    note: Greedy, temperature, top-k and top-p compared with examples.
+  - title: Text generation strategies
+    url: https://huggingface.co/docs/transformers/generation_strategies
+    kind: docs
+    note: The same dials as real library parameters.
+  - title: Transformer Explainer
+    url: https://poloclub.github.io/transformer-explainer/
+    kind: tool
+    note: It has a temperature slider on a real model.
+
+solution: { temp: "0" }
+wrong: { temp: "1" }

@@ -1,0 +1,5 @@
+# Facts that go out of date. Lessons refer to them as {{fact.key}} so there is one
+# place to update. Change `last_verified` whenever you check them.
+last_verified: "2026-11-16"
+mcp_spec: "2026-07-28"
+tokenizer: "o200k_base"

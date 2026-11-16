@@ -1,0 +1,29 @@
+---
+import Layout from '../layouts/Layout.astro';
+import MapList from '../components/MapList.astro';
+import TopicMap from '../components/TopicMap';
+import { SITE } from '../config';
+import { loadWorlds, topicTree } from '../lib/content';
+import { url } from '../lib/url';
+
+const worlds = loadWorlds();
+const tree = topicTree(worlds, url, SITE.name);
+---
+
+<Layout title="Topic map" description="Every concept in the game on one map, from tokens to agents in production.">
+  <header class="page-head">
+    <h1>Topic map</h1>
+    <p class="prose">
+      Every world, level and concept in the game. Click a circle to open or close a branch, drag to move, scroll to
+      zoom. Names in italics are planned and not written yet. The map is built from the lesson files, so new lessons
+      appear here by themselves.
+    </p>
+  </header>
+  <div class="mapbox">
+    <TopicMap client:load tree={tree} interactive tall expand={3} />
+    <details>
+      <summary>Read the map as a list</summary>
+      <div class="maplist"><MapList node={tree} /></div>
+    </details>
+  </div>
+</Layout>

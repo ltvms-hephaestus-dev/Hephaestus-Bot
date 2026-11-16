@@ -1,0 +1,14 @@
+---
+// The topic map as plain nested lists: readable without JavaScript and by screen readers.
+import type { TreeNode } from '../lib/content';
+interface Props { node: TreeNode }
+const { node } = Astro.props;
+---
+<ul>
+  {node.children.map((child) => (
+    <li>
+      <Fragment set:html={child.content} />
+      {child.children.length > 0 && <Astro.self node={child} />}
+    </li>
+  ))}
+</ul>

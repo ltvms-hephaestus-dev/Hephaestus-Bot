@@ -1,0 +1,19 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import LevelPlayer from '../../../components/LevelPlayer';
+import { loadWorlds } from '../../../lib/content';
+import { prepareOfficial } from '../../../lib/site';
+
+export function getStaticPaths() {
+  return loadWorlds().flatMap((w) => w.levels.map((l) => ({ params: { world: w.id, level: l.id } })));
+}
+
+const worlds = loadWorlds();
+const world = worlds.find((w) => w.id === Astro.params.world)!;
+const level = world.levels.find((l) => l.id === Astro.params.level)!;
+const data = prepareOfficial(world, level, worlds);
+---
+
+<Layout title={`${level.title} (World ${world.order}, level ${data.position.index})`} description={`Learn ${level.concepts.join(', ')} by solving a small code challenge.`}>
+  <LevelPlayer client:load data={data} />
+</Layout>
