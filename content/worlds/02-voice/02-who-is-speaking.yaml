@@ -1,0 +1,119 @@
+id: who-is-speaking
+title: Who is speaking
+concepts:
+  - roles
+  - system prompt
+  - user and assistant turns
+
+lesson: |
+  A conversation is a list of messages, and every message is labelled with who
+  said it.
+
+  - **user**: the person, or your application speaking for them.
+  - **assistant**: the model. Its earlier replies go back into the list with
+    this role.
+  - **system**: instructions from you, the developer. They frame the whole
+    conversation: who the model should be, what it must and must not do, how
+    answers should look.
+
+  The model reads all of it as one long text. The labels are how it tells its
+  own words from yours, and your instructions from the user's requests.
+
+  The system prompt is where your product's behaviour lives. Two apps on the
+  same model feel different mostly because of it. Users normally never see it.
+
+  In the API on this page the system prompt is a parameter of its own, called
+  `system`. Some providers instead expect it as the first message in the list.
+  Check the documentation of the one you use.
+
+goal: |
+  Two blanks. Put the blacksmith's instructions where instructions belong, and
+  label the robot's own earlier reply with the right role.
+
+scene:
+  type: messages
+  needs: [param, who]
+  request: { model: forge-1, max_tokens: "100" }
+  messages:
+    - { role: user, content: "Is this sharp?" }
+    - { role: "{{who}}", content: "Sharp enough." }
+    - { role: user, content: "And this axe?" }
+  cases:
+    - when: { who: "^(?!user$|assistant$).+" }
+      error: 'messages.1.role: "{{who}}" is not a role. Use "user" or "assistant".'
+    - when: { param: "^(?!system$).+" }
+      error: 'Unknown parameter "{{param}}".'
+    - when: { param: "^system$", who: "^assistant$" }
+      system: You are a grumpy blacksmith. Be brief.
+      reply: Dull as a spoon. Sharpen it.
+    - when: { param: "^system$", who: "^user$" }
+      system: You are a grumpy blacksmith. Be brief.
+      reply: You called it sharp enough yourself. Make up your mind.
+      note: Labelled "user", the second line reads as something you said, so the model argues with you.
+
+challenge:
+  type: fill
+  code:
+    python: |
+      reply = client.messages.create(
+          model="forge-1",
+          max_tokens=100,
+          {{param}}="You are a grumpy blacksmith. Be brief.",
+          messages=[
+              {"role": "user", "content": "Is this sharp?"},
+              {"role": "{{who}}", "content": "Sharp enough."},
+              {"role": "user", "content": "And this axe?"},
+          ],
+      )
+    typescript: |
+      const reply = await client.messages.create({
+        model: "forge-1",
+        max_tokens: 100,
+        {{param}}: "You are a grumpy blacksmith. Be brief.",
+        messages: [
+          { role: "user", content: "Is this sharp?" },
+          { role: "{{who}}", content: "Sharp enough." },
+          { role: "user", content: "And this axe?" },
+        ],
+      });
+  blanks:
+    param:
+      placeholder: parameter
+      width: 9
+      accept: { equals: system }
+      feedback: Instructions from the developer go in the `system` parameter.
+    who:
+      placeholder: role
+      width: 9
+      accept: { equals: assistant }
+      feedback: '"Sharp enough." was the robot talking. Which role is the model?'
+
+hints:
+  - The first blank is a parameter name. It is also the name of the third role in the lesson.
+  - The middle message is the model's own earlier answer. The model's role is not `user`.
+  - "The parameter is `system` and the role is `assistant`."
+
+success: |
+  Try the role `user` in the second blank and read the reply: the model now
+  thinks *you* said "Sharp enough" and argues with you. Getting the labels right
+  matters as much as the words.
+
+  Notice also what you just did: you wrote the assistant's earlier line yourself.
+  The model has no memory of saying it. That is the subject of the next level.
+
+links:
+  - title: Prompt engineering overview
+    url: https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview
+    kind: docs
+    note: Where system prompts sit among the other techniques.
+  - title: Get started with Claude
+    url: https://platform.claude.com/docs/en/get-started
+    kind: docs
+    note: Multi-turn conversations and system prompts against a real API.
+  - title: Text generation with Gemini
+    url: https://ai.google.dev/gemini-api/docs/text-generation
+    kind: docs
+    note: The same idea under the name "system instruction".
+
+solution: { param: system, who: assistant }
+wrong: { param: system, who: user }

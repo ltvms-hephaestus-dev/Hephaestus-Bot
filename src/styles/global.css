@@ -602,6 +602,32 @@ kbd {
 .ctx__msg--out .ctx__text { text-decoration: line-through; }
 .ctx__msg--out .ctx__tokens { color: var(--bad); font-weight: 700; }
 
+.req { display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; align-items: baseline; font: 0.8rem var(--mono); margin-bottom: 0.6rem; }
+.req__verb { background: var(--ink); color: #fff; border-radius: 4px; padding: 0.05rem 0.45rem; }
+.msgs { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+.msg { display: grid; grid-template-columns: 5.2rem minmax(0, 1fr); gap: 0.1rem 0.6rem; background: #fff; border: 2px solid var(--ink); border-radius: var(--radius); padding: 0.45rem 0.65rem; margin: 0; font-size: var(--step--1); line-height: 1.4; }
+.msg__role { font: 700 0.75rem/1.7 var(--mono); overflow-wrap: anywhere; }
+.msg__text { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.4em; }
+.msg__mono { font: 0.8rem/1.5 var(--mono); margin: 0; }
+.msg__meta { grid-column: 2; font: 0.72rem var(--mono); color: var(--ink-2); }
+.msg--system { border-left: 0.5rem solid var(--temper); }
+.msg--assistant { background: var(--steel-50); }
+.msg--unknown { border-style: dashed; }
+.msg--reply { border-width: 3px; }
+.msg--cut { border-right-style: dashed; }
+.msg--cut .msg__meta { color: var(--bad); font-weight: 700; }
+.msg--error { background: var(--bad-bg); border-color: var(--bad); }
+.msg--error .msg__role { color: var(--bad); }
+.msg--pending { display: block; border-style: dashed; border-color: var(--steel-500); background: transparent; color: var(--ink-2); }
+.msgs__arrow { font: 0.75rem var(--mono); color: var(--ink-2); margin: 0.5rem 0 0.5rem 0.2rem; }
+.scene-msgs .btn { margin-top: 0.7rem; }
+.receipt { width: 100%; border-collapse: collapse; margin-top: 0.9rem; font-size: var(--step--1); background: #fff; border: 2px solid var(--ink); }
+.receipt caption { text-align: left; font-size: 0.8rem; color: var(--ink-2); padding-bottom: 0.35rem; }
+.receipt th { text-align: left; font-weight: 400; padding: 0.3rem 0.6rem; }
+.receipt td { text-align: right; font: 0.85rem var(--mono); padding: 0.3rem 0.6rem; }
+.receipt tr + tr { border-top: 1px solid var(--steel-300); }
+.receipt__total th, .receipt__total td { font-weight: 700; border-top: 2px solid var(--ink); }
+
 /* ---------------------------------------------------------------- beyond */
 .beyond-section { padding: 2rem 0; border-top: 2px solid var(--steel-300); display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 1rem 3rem; }
 .beyond-section h2 { margin-bottom: 0.3em; }

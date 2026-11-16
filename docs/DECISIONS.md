@@ -33,11 +33,22 @@ yet match its own [build prompt](./kickoff/BUILD_PROMPT.md).
 - **Copyright holder** is "Hephaestus Bot contributors". Change `LICENSE` if the
   repository owner wants a named holder.
 
+- **World 2 uses a made-up API, `forge-1` and `client.messages.create`.** It has the
+  shape most providers share (a model, a list of messages, a token limit, a separate
+  system prompt, usage counts, streaming events), so the lessons do not age with any
+  one provider's model names. Where providers differ, the lesson says so.
+- **Prices in World 2 are examples** ($3 and $15 per million tokens) and are labelled as
+  such on the board. Real prices belong in the linked pricing pages, not in lessons.
+- **One board serves all of World 2.** The `messages` scene shows a request and its
+  reply, and lessons describe the alternative outcomes as data (`cases`). No lesson
+  in World 2 needed code of its own, and Worlds 3 and 4 can reuse the scene for tool
+  calls and JSON-RPC.
+
 ## Known gaps
 
-- **Worlds 2 to 7 are outlines.** Their lessons are listed under `planned:` in each
-  `world.yaml`. They need new scenes: a message trace (for API calls and JSON-RPC), an
-  agent loop, and a retrieval view.
+- **Worlds 3 to 7 are outlines.** Their lessons are listed under `planned:` in each
+  `world.yaml`. They still need new scenes: a retrieval view, an agent loop and a
+  run trace.
 - **Interface strings are still inside the components.** The build prompt asks for one
   dictionary. This is the first step for translations; see CONTRIBUTING.
 - **Some links were written from memory and not machine-checked** at creation time,
@@ -46,7 +57,9 @@ yet match its own [build prompt](./kickoff/BUILD_PROMPT.md).
   OpenAI tokenizer, minbpe, Illustrated Word2vec, Embedding Projector, LLM
   Visualization, arXiv, Hugging Face blog and docs, YouTube, nanoGPT, Ollama, fast.ai,
   LLMs-from-scratch, PEFT, Pydantic AI, LlamaIndex, MCP SDK repositories, Microsoft
-  AI Agents for Beginners, Simon Willison and Hamel Husain links.
+  AI Agents for Beginners, Simon Willison and Hamel Husain links; and, in World 2, the
+  Gemini text-generation page, MDN server-sent events, the Anthropic prompt tutorial
+  repository, promptingguide.ai, json-schema.org, Zod and Pydantic.
 - **No end-to-end browser test is committed.** Every level was played wrong and then
   right in headless Chrome during development, but that script is not part of CI.
 - **Challenges are designed for a keyboard and a wide screen.** They work on a phone;

@@ -122,6 +122,19 @@ scene input to a blank by name.
 | `embeddings` | Words as points, with vector arithmetic | `points: { word: [x, y] }`, `expr: { start, minus }`, `bind: { plus }` |
 | `attention` | A sentence with attention arcs | `tokens`, `weights`, `focus` (index), `bind: { guess }`, `alt` |
 | `context` | A conversation and a context window | `messages: [{ role, text, tokens, key }]`, `bind: { window }`, `remembered`, `forgotten` |
+| `messages` | A request to a model and the reply or error that comes back | `request`, `system`, `messages: [{ role, content }]`, `reply` (text, or `{ tokens }`, or `{ content, mono }`), `error`, `note`, `say`, `needs`, `cases`, `bind: { maxTokens, stream, inPrice, outPrice }`, `stream: true`, `usage`, `prices` |
+
+The `messages` scene is driven by data. Any string in it may contain `{{blank}}` to
+show what the player typed. `needs` lists blanks that must be filled before anything
+is "sent". `cases` describes alternative outcomes: each has a `when` map of blank name
+to a regular expression, and the first case whose patterns all match replaces the
+default `messages`, `reply`, `error`, `note` and so on. See
+`content/worlds/02-voice/` for seven worked examples.
+
+Scenes read answers by name. Blanks keep their own names. For the other challenge
+types the answer is exposed as `choice` (the selected option ids, comma-separated),
+`order` (the item ids in their current order) and `json` (the text as typed), so a
+`messages` case can react to a click with `when: { choice: "^specific$" }`.
 
 If a scene shows data that determines the answer, add a test in
 `tests/content.test.ts` proving the board and the solution agree (see the existing

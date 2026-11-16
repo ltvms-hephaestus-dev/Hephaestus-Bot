@@ -189,7 +189,12 @@ export default function LevelPlayer({ data, persist = true }: PlayerProps) {
   }
 
   const Scene = SCENES[level.scene.type] ?? SCENES.robot!;
-  const sceneValues = useMemo(() => values, [values]);
+  // Scenes read answers by name. Blanks keep their own names; the other challenge
+  // types are exposed as "choice", "order" and "json".
+  const sceneValues = useMemo<Record<string, string>>(
+    () => (c.type === 'fill' ? values : c.type === 'choice' ? { choice: picked.join(',') } : c.type === 'order' ? { order: order.join(',') } : { json: jsonText }),
+    [c.type, values, picked, order, jsonText],
+  );
   const mood = status === 'solved' ? 'happy' : status === 'wrong' ? 'sad' : 'idle';
   const fallback = status === 'solved' ? 'That is it!' : status === 'wrong' ? 'Not yet. Read the feedback and try again.' : 'Ready when you are.';
   const hasCode = c.type === 'fill' || (c.type === 'choice' && c.code);

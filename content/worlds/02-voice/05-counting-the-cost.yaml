@@ -1,0 +1,101 @@
+id: counting-the-cost
+title: Counting the cost
+concepts:
+  - input and output tokens
+  - price per million tokens
+  - latency
+  - prompt caching
+
+lesson: |
+  Every response ends with a `usage` report: how many **input tokens** you sent
+  (the system prompt plus every message) and how many **output tokens** the model
+  wrote. That report is your bill.
+
+  Prices are quoted in dollars per million tokens, and there are two of them.
+  Output tokens usually cost several times more than input tokens, because each
+  one takes a full pass through the model.
+
+  Three habits follow from that:
+
+  - **Watch the input.** The API is stateless, so a long history or a big pasted
+    document is paid for again on every single request.
+  - **Bound the output.** Ask for short answers when short is enough. Output is
+    the expensive side, and the slow one: tokens are produced one after another,
+    so a long reply takes long.
+  - **Cache what repeats.** With **prompt caching** the provider keeps a long,
+    unchanging start of your prompt ready for a few minutes and charges a small
+    fraction to reuse it.
+
+  Real prices change often. The ones on the board are examples.
+
+goal: |
+  The price list and the token counts are on the board. Fill in the two prices,
+  in dollars per million tokens, so that `dollars` is what this request cost.
+
+scene:
+  type: messages
+  bind: { inPrice: in_price, outPrice: out_price }
+  request: { model: forge-1, max_tokens: "600" }
+  system: You are a careful analyst. (A 1,900-token style guide follows.)
+  messages:
+    - { role: user, content: "Summarise the attached incident report." }
+  reply: The outage began at 09:14 when the billing queue filled up…
+  usage: { input: 2000, output: 500 }
+  prices: { label: "forge-1, example prices", input: 3, output: 15 }
+  say: Check the receipt. Does it match the price list?
+
+challenge:
+  type: fill
+  code:
+    python: |
+      usage = reply.usage  # counts are on the board
+      dollars = (
+          usage.input_tokens * {{in_price}}
+          + usage.output_tokens * {{out_price}}
+      ) / 1_000_000
+    typescript: |
+      const usage = reply.usage; // counts are on the board
+      const dollars =
+        (usage.input_tokens * {{in_price}} +
+          usage.output_tokens * {{out_price}}) / 1_000_000;
+  blanks:
+    in_price:
+      placeholder: "$"
+      width: 4
+      accept: { number: { eq: 3 } }
+      feedback: Read the price for input tokens off the board.
+    out_price:
+      placeholder: "$"
+      width: 4
+      accept: { number: { eq: 15 } }
+      feedback: Read the price for output tokens off the board. It is not the same as the input price.
+
+hints:
+  - There are two prices on the board, one for each direction.
+  - Input tokens are what you sent. Output tokens are what came back, and they cost more.
+  - "Input is `3` and output is `15`."
+
+success: |
+  A little over a cent. Now read the last line of the receipt: at ten thousand
+  requests it is $135, and more than half of that is the 500 output tokens.
+
+  Look at the system prompt too. Its 1,900-token style guide is sent, and paid
+  for, on every request. A prefix that never changes is exactly what prompt
+  caching is for.
+
+links:
+  - title: Pricing
+    url: https://docs.claude.com/en/docs/about-claude/pricing
+    kind: docs
+    note: A real price list, with separate input and output columns.
+  - title: Prompt caching
+    url: https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+    kind: docs
+    note: How reusing a repeated prefix is billed.
+  - title: Tokenizer playground
+    url: https://platform.openai.com/tokenizer
+    kind: tool
+    note: Estimate the token count of your own prompts.
+
+solution: { in_price: "3", out_price: "15" }
+wrong: { in_price: "15", out_price: "3" }

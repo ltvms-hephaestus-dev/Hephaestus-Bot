@@ -6,11 +6,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import YAML from 'yaml';
-import { check, referenceAnswer } from '../src/lib/check';
+import { check, checkBlank, referenceAnswer } from '../src/lib/check';
 import { loadBeyond, loadWorlds, topicTree } from '../src/lib/content';
 import { LevelSchema } from '../src/lib/schema';
 import { TEMPLATES } from '../src/lib/templates';
-import { analogy, fitWindow, reshape, SCENE_NAMES } from '../src/scenes';
+import { analogy, bill, fitWindow, reshape, resolveMessages, SCENE_NAMES, streamTiming } from '../src/scenes';
 
 const worlds = loadWorlds();
 const levels = worlds.flatMap((w) => w.levels.map((l) => ({ w, l, name: `${w.id}/${l.id}` })));
@@ -120,6 +120,105 @@ describe('scenes agree with the lessons that use them', () => {
     expect(keeps(64)).toBe(false);
     expect(keeps(128)).toBe(true);
     expect((l.solution as Record<string, string>).size).toBe('128');
+  });
+});
+
+describe('world 2 boards agree with their lessons', () => {
+  const find = (id: string) => levels.find((x) => x.l.id === id)!.l;
+  const asValues = (l: ReturnType<typeof find>, answer: unknown): Record<string, string> =>
+    l.challenge.type === 'fill'
+      ? (answer as Record<string, string>)
+      : l.challenge.type === 'choice'
+        ? { choice: (answer as string[]).join(',') }
+        : { json: answer as string };
+  const view = (id: string, answer: unknown) => resolveMessages(find(id).scene, asValues(find(id), answer));
+
+  it('every request/reply board shows a clean reply for the reference answer', () => {
+    for (const { l } of levels.filter((x) => x.l.scene.type === 'messages')) {
+      const v = resolveMessages(l.scene, asValues(l, referenceAnswer(l)));
+      expect(v.error, l.id).toBeUndefined();
+      expect(v.pending, l.id).toBe(false);
+      expect(v.reply, l.id).toBeDefined();
+    }
+  });
+
+  it('one HTTP request: the limit cuts the reply exactly where the lesson says', () => {
+    const l = find('one-http-request');
+    const tokens = (l.scene as any).reply.tokens as string[];
+    expect(tokens).toHaveLength(12);
+    expect(view('one-http-request', { role: 'user', max: '12' }).reply).toMatchObject({ cut: false, stopReason: 'end_turn' });
+    expect(view('one-http-request', { role: 'user', max: '11' }).reply).toMatchObject({ cut: true, stopReason: 'max_tokens' });
+    expect(view('one-http-request', l.wrong).reply?.cut).toBe(true);
+    expect(view('one-http-request', { role: 'robot', max: '100' }).error).toMatch(/not a role/);
+    expect(view('one-http-request', { role: 'user', max: '0' }).error).toMatch(/at least 1/);
+    expect(view('one-http-request', { role: 'user', max: '' }).pending).toBe(true);
+  });
+
+  it('who is speaking: the system prompt only applies with the right parameter and roles', () => {
+    expect(view('who-is-speaking', { param: 'system', who: 'assistant' }).system).toMatch(/blacksmith/);
+    expect(view('who-is-speaking', { param: 'system', who: 'user' }).note).toBeDefined();
+    expect(view('who-is-speaking', { param: 'instructions', who: 'assistant' }).error).toMatch(/Unknown parameter/);
+    expect(view('who-is-speaking', { param: 'system', who: 'robot' }).error).toMatch(/not a role/);
+  });
+
+  it('nothing is remembered: the robot knows the name only when the history is sent', async () => {
+    const l = find('nothing-is-remembered');
+    const blank = (l.challenge as any).blanks.sent;
+    for (const good of ['history + [question]', 'history+[question]', '[...history, question]', '[ ...history, question, ]']) {
+      expect(await checkBlank(good, blank), good).toBe(true);
+      const v = view('nothing-is-remembered', { sent: good });
+      expect(v.messages, good).toHaveLength(3);
+      expect(v.reply?.content).toMatch(/Ada/);
+    }
+    for (const bad of ['[question]', 'question', 'history', 'messages', '[question] + history']) {
+      expect(await checkBlank(bad, blank), bad).toBe(false);
+    }
+    expect(view('nothing-is-remembered', { sent: '[question]' }).messages).toHaveLength(1);
+    expect(view('nothing-is-remembered', { sent: '[question]' }).reply?.content).not.toMatch(/Ada/);
+    expect(view('nothing-is-remembered', { sent: 'history' }).messages).toHaveLength(2);
+    expect(view('nothing-is-remembered', { sent: 'everything' }).error).toBeDefined();
+  });
+
+  it('word by word: streaming changes the first words, not the finish', () => {
+    const tokens = (find('word-by-word').scene as any).reply.tokens as string[];
+    const on = streamTiming(tokens.length, true);
+    const off = streamTiming(tokens.length, false);
+    expect(on.total).toBe(off.total);
+    expect(on.first).toBeLessThan(off.first);
+    expect([on.first, off.first]).toEqual([0.2, 3.2]); // the numbers quoted in the success text
+    expect(view('word-by-word', { on: 'maybe' }).error).toBeDefined();
+    expect(view('word-by-word', { on: 'False' }).reply).toBeDefined();
+  });
+
+  it('counting the cost: the answer is the price list, and the totals in the text are right', () => {
+    const l = find('counting-the-cost');
+    const s = l.scene as any;
+    const sol = l.solution as Record<string, string>;
+    expect([Number(sol.in_price), Number(sol.out_price)]).toEqual([s.prices.input, s.prices.output]);
+    const cost = bill(s.usage, s.prices.input, s.prices.output);
+    expect(cost.total).toBeCloseTo(0.0135, 6);
+    expect(cost.total * 10000).toBeCloseTo(135, 6);
+    expect(cost.output).toBeGreaterThan(cost.input);
+  });
+
+  it('saying what you mean: every option shows its own reply, and only the right one is two lines', () => {
+    const l = find('saying-what-you-mean');
+    if (l.challenge.type !== 'choice') throw new Error('expected a choice challenge');
+    expect(view('saying-what-you-mean', []).pending).toBe(true);
+    for (const o of l.challenge.options) {
+      const v = view('saying-what-you-mean', [o.id]);
+      expect(v.reply, o.id).toBeDefined();
+      expect(/\nPriority: (low|medium|high)$/.test(v.reply!.content), o.id).toBe(!!o.correct);
+    }
+  });
+
+  it('answers your code can read: the reply only becomes valid once the schema has the enum', () => {
+    const l = find('answers-your-code-can-read');
+    const before = JSON.parse(view('answers-your-code-can-read', l.wrong).reply!.content);
+    const after = JSON.parse(view('answers-your-code-can-read', l.solution).reply!.content);
+    expect(['low', 'medium', 'high']).not.toContain(before.priority);
+    expect(['low', 'medium', 'high']).toContain(after.priority);
+    expect(JSON.parse((l.challenge as any).starter)).toBeTypeOf('object');
   });
 });
 

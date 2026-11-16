@@ -211,5 +211,5 @@ export type Answer = z.infer<typeof AnswerSchema>;
 
 /** Turn Zod issues into short, readable lines. */
 export function explain(error: z.ZodError): string[] {
-  return error.issues.map((i) => `${i.path.length ? i.path.join('.') : 'lesson'}: ${i.message}`);
+  return error.issues.map((i) => `${i.path.length ? i.path.join('.') : 'top level of the file'}: ${i.message}`);
 }

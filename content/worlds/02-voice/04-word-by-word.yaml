@@ -1,0 +1,106 @@
+id: word-by-word
+title: Word by word
+concepts:
+  - streaming
+  - server-sent events
+  - time to first token
+
+lesson: |
+  The model writes one token at a time. By default the server waits until the
+  last token exists and then sends the whole reply at once. For a long answer,
+  the user watches a spinner for many seconds.
+
+  **Streaming** changes when you receive the text, not how fast it is written.
+  The server keeps the connection open and sends each small piece the moment it
+  is generated, using a web standard called **server-sent events**. The total
+  time is the same. The wait for the *first* words drops from seconds to a
+  fraction of a second, and that is the number people feel.
+
+  Your code changes shape too. Instead of one response you get a sequence of
+  events: one says the message has started, many small **delta** events each
+  carry a few characters, and a last one says it is over. You append the deltas
+  as they arrive.
+
+  Stream when a person is reading. When another program consumes the answer and
+  needs all of it, for example to parse JSON, a single response is simpler.
+
+goal: |
+  A person is waiting for this answer. Set `stream` so the first words reach
+  them straight away. Try it both ways and compare the timings on the board.
+
+scene:
+  type: messages
+  needs: [on]
+  stream: true
+  bind: { stream: on }
+  request: { model: forge-1, stream: "{{on}}" }
+  messages:
+    - { role: user, content: "Describe your forge in one sentence." }
+  reply:
+    tokens: ["The", " forge", " glows", " orange", ",", " the", " bellows", " breathe", ",", " and", " sparks", " jump", " from", " the", " anvil", "."]
+  cases:
+    - when: { on: "^(?!true$|false$).+" }
+      error: "stream: expected true or false."
+
+challenge:
+  type: fill
+  code:
+    python: |
+      stream = client.messages.create(
+          model="forge-1",
+          max_tokens=100,
+          messages=[question],
+          stream={{on}},
+      )
+      for event in stream:
+          if event.type == "content_block_delta":
+              print(event.delta.text, end="")
+    typescript: |
+      const stream = await client.messages.create({
+        model: "forge-1",
+        max_tokens: 100,
+        messages: [question],
+        stream: {{on}},
+      });
+      for await (const event of stream) {
+        if (event.type === "content_block_delta") {
+          process.stdout.write(event.delta.text);
+        }
+      }
+  blanks:
+    on:
+      placeholder: true or false
+      width: 7
+      accept: { equals: "true" }
+      feedback: With that setting the whole answer still arrives in one piece at the end.
+
+hints:
+  - The setting is a boolean. Type `false` first and watch how long nothing happens.
+  - Both runs finish at the same moment. Only one of them shows words early.
+  - "Set it to `True` in Python or `true` in TypeScript."
+
+success: |
+  Both versions finished at the same time. With streaming the reader had words
+  after 0.2 seconds instead of 3.2. That first number has a name, **time to
+  first token**, and it is what makes an interface feel fast.
+
+  The loop under the blank is the part that changes in your code: it handles
+  events and only prints the ones that carry text. Other event types announce the
+  start, the end and the final token counts.
+
+links:
+  - title: Streaming messages
+    url: https://platform.claude.com/docs/en/build-with-claude/streaming
+    kind: docs
+    note: Every event type in a real stream, in order.
+  - title: Using server-sent events
+    url: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events
+    kind: docs
+    note: The web standard underneath, independent of any AI provider.
+  - title: Transformer Explainer
+    url: https://poloclub.github.io/transformer-explainer/
+    kind: tool
+    note: A reminder of why text can only arrive one token at a time.
+
+solution: { on: "true" }
+wrong: { on: "false" }
