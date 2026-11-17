@@ -87,6 +87,9 @@ need a server, and this project does not have one by design.
 
 ## How it is built
 
+For a file-by-file guide, the rules the code depends on, and where to make each kind
+of change, see [REPO_MAP.md](./REPO_MAP.md).
+
 ```
 content/                 Lessons, as data. The only place lessons live.
   worlds/<nn-id>/world.yaml
