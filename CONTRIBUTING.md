@@ -187,7 +187,9 @@ npm test
 npm run build
 ```
 
-Both must pass. Describe in one sentence what a player can do after your change that
+Both must pass. If you added, moved or removed a file, a board, a route or a world,
+update [REPO_MAP.md](./REPO_MAP.md) in the same pull request; `npm test` tells you
+what it is missing. Describe in one sentence what a player can do after your change that
 they could not do before.
 
 Lessons you contribute are licensed CC BY 4.0, and code MIT, like the rest of the
